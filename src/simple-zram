@@ -1,18 +1,39 @@
 #!/bin/env bash
 
+# Simple-ZRAM is a simple script to create and enable zram swap devices
+# - Copyright (C) 2024 by Michael Schaecher <mschaecher78@gmail.com> under the MIT License
+
 set -eo pipefail
+
+NAME=simple-zram
+VERSION=
 
 # shellcheck disable=SC1091
 source /etc/simple-zram.conf
+
+# Test if we are root
+test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; }
+
+TOTAL_RAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
+USED_RAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
+
+test "${TOTAL_RAM}" -gt "33554432" || { echo "simple-zram requires at least 32MB of RAM" ; exit 1 ; }
+
+# Do some math to calculate if more then 50% of the RAM is used
+AVAILABLE_RAM="$((USED_RAM * 100 / TOTAL_RAM))"
+
+test "${AVAILABLE_RAM}" -lt "50" ||
+{ echo "simple-zram requires at least 50% of the RAM to be free" ; exit 1 ; }
+
+case "${1}" in --version) echo "${NAME} - ${VERSION}" ; exit 0 ;; esac
 
 if swapon --show | grep -q '/dev/zram' ; then swapoff -a ; fi
 
 # Reset the zram devices first
 while IFS= read -r LINE ; do zramctl --reset "${LINE}" ; done < <(zramctl -n | awk '{print $1}')
 
-WHICH_ZRAM="$(zramctl --size "${SWAP_SIZE}" --algorithm "${COMPRESSION}" --find)"
-
-test -n "${WHICH_ZRAM}" || { echo "Failed to create zram device" ; exit 1 ; }
+WHICH_ZRAM="$(zramctl --size "${SWAP_SIZE}" --algorithm "${COMPRESSION}" --find)" ||
+{ echo "Failed to create zram device" ; exit 1 ; }
 
 mkswap -L SWAP "${WHICH_ZRAM}" ; swapon "${WHICH_ZRAM}"
 

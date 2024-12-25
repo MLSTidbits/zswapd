@@ -6,6 +6,9 @@ After = local-fs.target
 Type = oneshot
 ExecStart = /usr/bin/simple-zram
 RemainAfterExit = yes
+Restart = on-failure
+RestartSteps = 5
+RestartMaxDelaySec = 1min
 
 [Install]
 WantedBy = multi-user.target

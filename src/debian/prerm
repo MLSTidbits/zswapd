@@ -4,10 +4,10 @@ set -e
 
 case "${1}" in
     remove|purge)
-        systemctl is-active --quiet zram-swap.service && systemctl disable --now zram-swap.service || true
+        systemctl disable --now zram-swap.service
     ;;
     *)
         echo "prerm called with unknown argument: ${1}" >&2
-        exit 1
+        exit 0
     ;;
 esac

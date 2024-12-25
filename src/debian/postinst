@@ -4,11 +4,15 @@ set -e
 
 case "${1}" in
     configure)
-        systemctl is-active --quiet zram-swap.service && systemctl restart zram-swap.service || true
+        if systemctl is-active --quiet simple-zram.service; then
+            systemctl daemon-reload
+        else
+            systemctl restart simple-zram.service
+        fi
     ;;
     abort-upgrade|abort-remove|abort-deconfigure)
     ;;
     *)
         echo "postinst called with unknown argument: ${1}" >&2
-        exit 1
+        exit 0
 esac
