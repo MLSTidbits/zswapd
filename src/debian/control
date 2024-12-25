@@ -5,7 +5,13 @@ Priority: optional
 Architecture: all
 Depends: bash, coreutils, awk, util-linux
 Build-Depends: make
+Require: systemd, cureutils, awk, util-linux
 Maintainer:
-Homepage: https://github.com/MichaelSchaecher/simple-zram
+Homepage: https://hotonebie.com
 Description: Create and enable zram swap devices
     This package provides a simple script to create and enable zram swap devices.
+Source: https://github.com/MichaelSchaecher/simple-zram
+Files: *
+Copyright: 2024 Michael Schaecher
+License: MIT
+    Permission is hereby granted, free of charge...
