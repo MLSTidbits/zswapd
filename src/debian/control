@@ -1,0 +1,11 @@
+Package: simple-zram
+Version:
+Section: utils
+Priority: optional
+Architecture: all
+Depends: bash, coreutils, awk, util-linux
+Build-Depends: make
+Maintainer:
+Homepage: https://github.com/MichaelSchaecher/simple-zram
+Description: Create and enable zram swap devices
+    This package provides a simple script to create and enable zram swap devices.

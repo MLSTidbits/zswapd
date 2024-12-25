@@ -1,0 +1,11 @@
+[Unit]
+Description = Create and enable zram swap devices
+After = local-fs.target
+
+[Service]
+Type = oneshot
+ExecStart = /usr/bin/simple-zram
+RemainAfterExit = yes
+
+[Install]
+WantedBy = multi-user.target

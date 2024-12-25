@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+case "${1}" in
+    remove|purge)
+        systemctl is-active --quiet zram-swap.service && systemctl disable --now zram-swap.service || true
+    ;;
+    *)
+        echo "prerm called with unknown argument: ${1}" >&2
+        exit 1
+    ;;
+esac

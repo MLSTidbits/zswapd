@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -e
+
+case "${1}" in
+    configure)
+        systemctl is-active --quiet zram-swap.service && systemctl restart zram-swap.service || true
+    ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+    *)
+        echo "postinst called with unknown argument: ${1}" >&2
+        exit 1
+esac
