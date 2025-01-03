@@ -62,4 +62,4 @@ uninstall:
 	@rm -f /usr/bin/$(NAME) /etc/$(NAME).conf /lib/systemd/system/$(NAME).service
 
 clean:
-	rm -rf build/*
+	rm -rf build

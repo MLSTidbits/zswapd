@@ -1,0 +1,5 @@
+# .gitignore
+.markdownlint.yaml
+
+build/
+.vscode/
