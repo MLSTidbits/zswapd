@@ -11,11 +11,11 @@ VERSION=
 TOTAL_RAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
 USED_RAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
 
-# shellcheck disable=SC1091
-source /etc/simple-zram.conf
-
 # Do some math to calculate if more then 50% of the RAM is used
 AVAILABLE_RAM="$((USED_RAM * 100 / TOTAL_RAM))"
+
+# shellcheck disable=SC1091
+source /etc/simple-zram.conf
 
 case "${1}" in -v|--version ) echo "(${NAME}) - version: ${VERSION}" ; exit 0 ;; esac
 
