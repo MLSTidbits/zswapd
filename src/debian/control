@@ -1,8 +1,9 @@
-Package: simple-zram
+Package:
 Version:
 Section: utils
 Priority: optional
 Architecture: all
+Installed-Size:
 Depends: bash, coreutils, awk, util-linux
 Build-Depends: make
 Require: systemd, cureutils, awk, util-linux
