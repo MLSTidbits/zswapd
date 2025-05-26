@@ -39,9 +39,11 @@ _usedRAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
 # Do some math to calculate if more then 50% of the RAM is used
 _availableRAM="$(( 100 - (( _usedRAM * 100 ) / _totalRAM) ))"
 
+# Default values for the script
 _swapSize=${SWAP_SIZE:-"2G"}
-
 _compression=${COMPRESSION:-"lzo"}
+_swapDevices="${SWAP_DEVICES:-"1"}"
+_swapPriority=${SWAP_PRIORITY:-"100"}
 
 _versionInfo="$(cat <<EOF
 ${_appName} - version: ${_appVersion}
