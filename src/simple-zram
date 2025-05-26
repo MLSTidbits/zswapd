@@ -16,6 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+function verifyRoot () {
+
+    # Test if we are root
+    test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; }
+
+}
+
 function validateCompression () {
 
     case "${1}" in
@@ -64,12 +71,26 @@ Copyright (C) 2024 Michael Schaecher <michaelleeschaecher@gmail.com> GNU v3 Lice
 EOF
 )"
 
-case "${1}" in info ) echo "${_versionInfo}" ; exit 0 ;; esac
+case "${1}" in
+    start                   )
+        verifyRoot
+    ;;
+    stop                    )
+        verifyRoot
+
+        # Disable all zram devices and reset them
+        for device in $(zramctl -n| awk '{print $1}') ; do
+            swapoff "${device}" || { echo "Failed to disable swap on ${device}" ; exit 1 ; }
+            zramctl --reset "${device}" || { echo "Failed to reset zram device ${device}" ; exit 1 ; }
+        done
+
+        # Check if there is a swap partition or file
+    ;;
+    info                    ) echo "${_versionInfo}" ; exit 0                            ;;
+    help                    ) echo "${_helpInfo}" ; exit 0                               ;;
+esac
 
 validateCompression "${_compression}"
-
-# Test if we are root
-test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; }
 
 test "${TOTAL_RAM}" -gt "33554432" || { echo "simple-zram requires at least 32MB of RAM" ; exit 1 ; }
 
