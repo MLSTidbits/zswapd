@@ -16,10 +16,84 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-function verifyRoot () {
+# Test if we are root
+function verifyRoot () { test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; } ;}
 
-    # Test if we are root
-    test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; }
+# Log messages to syslog
+function sysLog () { logger -t "${_appName}" "${@}"; }
+
+function startSwap () {
+
+        # Does a zram device already exist?
+        ! zramctl -n | grep -q '/dev/zram' || {
+            sysLog "ZRAM device already exists, stopping it first" ; exit 0
+        }
+
+        # Validate the compression algorithm is supported.
+        case "${_swapAlgorithm}" in
+            lzo|zstd|lz4    ) ;;
+            *               )
+                sysLog "Unsupported compression algorithm: ${_swapAlgorithm}"
+                echo "Unsupported compression algorithm: ${_swapAlgorithm}" ; exit 1
+            ;;
+        esac
+
+        # Make sure that the required amount of RAM is available (32Gb minimum)
+        test "${_totalRAM}" -gt "33554432" || {
+            sysLog "$(( _totalRAM / 1024000 ))GB of RAM is available, but at least 32GB is required!"
+            echo "${_appName} requires at least 32GB of RAM" ; exit 1
+        }
+
+        test "${_availableRAM}" -gt "50" || {
+            sysLog "${_availableRAM}% of RAM is available, but at least 50% is required"
+            echo "${_appName} requires at least 50% of the RAM to be free" ; exit 1
+        }
+
+        # If more then 1 zram device then override swap priority
+        test "${_swapDevices}" -lt "1" || _swapPriority=$(( 100 / _swapDevices ))
+
+        _count="0"
+
+        # Create the zram devices
+        while test "${_count}" -lt "${_swapDevices}" ; do
+            _device="$(zramctl --size "${_swapSize}G" --algorithm "${_swapAlgorithm}" --find || {
+                sysLog "Failed to create zram device!"
+                echo "Failed to create zram device" ; exit 1
+            })"
+
+            mkswap -L SWAP "${_device}" || {
+                sysLog "Failed to create swap on zram device: ${_device}"
+                echo "Failed to create swap on zram device: ${_device}" ; exit 1
+            }
+
+            if test -n "${_swapPriority}" && swapon --priority "${_swapPriority}" "${_device}" ; then
+                sysLog "Failed to enable swap on zram device: ${_device}"
+                echo "Failed to enable swap on zram device: ${_device}" ; exit 1
+            elif test -z "${_swapPriority}" && swapon "${_device}" ; then
+                sysLog "Failed to enable swap on zram device: ${_device}"
+                echo "Failed to enable swap on zram device: ${_device}" ; exit 1
+            fi
+
+            sysLog "Created zram device: ${_device} with size: ${_swapSize}G and algorithm: ${_swapAlgorithm}"
+
+            _count=$(( _count + 1 ))
+        done
+
+}
+
+function stopSwap () {
+
+    while IFS= read -r _device ; do
+        swapoff "${_device}" || {
+            sysLog "Failed to disable swap on zram device: ${_device}"
+            echo "Failed to disable swap on zram device: ${_device}" ; exit 1
+        }
+        zramctl --reset "${_device}" || {
+            sysLog "Failed to reset zram device: ${_device}"
+            echo "Failed to reset zram device: ${_device}" ; exit 1
+        }
+        sysLog "Disabled and reset zram device: ${_device}"
+    done < <(zramctl -n | awk '{print $1}')
 
 }
 
@@ -92,67 +166,11 @@ EOF
 )"
 
 case "${1}" in
-    start                   )
-        verifyRoot
-        # Does a zram device already exist?
-        ! zramctl -n | grep -q '/dev/zram' || {
-            echo "ZRAM device already exists. Use '${_appName} stop' to reset it."
-            exit 0
-        }
-
-        # Validate the compression algorithm is supported.
-        case "${_swapAlgorithm}" in
-            lzo|zstd|lz4    ) ;;
-            *               ) echo "Unsupported compression algorithm: ${1}" ; return 1 ;;
-        esac
-
-        # Make sure that the required amount of RAM is available (32Gb minimum)
-        test "${_totalRAM}" -gt "33554432" || { echo "${_appName} requires at least 32MB of RAM" ; exit 1 ; }
-
-        test "${_availableRAM}" -gt "50" ||
-        { echo "${_appName} requires at least 50% of the RAM to be free" ; exit 1 ; }
-
-        # If more then 1 zram device then override swap priority
-        test "${_swapDevices}" -lt "1" || _swapPriority=$(( 100 / _swapDevices ))
-
-        _count="0"
-
-        # Create the zram devices
-        while [ "${_count}" -lt "${_swapDevices}" ] ; do
-            _device="$(zramctl --size "${_swapSize}G" --algorithm "${_swapAlgorithm}" --find ||
-            { echo "Failed to create zram device" ; exit 1 ; })"
-
-            mkswap -L SWAP "${_device}" || {
-                echo "Failed to create swap on zram device: ${_device}" ; exit 1
-            }
-
-            if test -n "${_swapPriority}" ; then
-                swapon --priority "${_swapPriority}" "${_device}" ||
-                { echo "Failed to enable swap on zram device: ${_device}" ; exit 1 ; }
-            else
-                swapon "${_device}" ||
-                { echo "Failed to enable swap on zram device: ${_device}" ; exit 1 ; }
-            fi
-
-            _count=$(( _count + 1 ))
-        done
-
-    ;;
-    stop                    )
-        verifyRoot
-
-        # Disable all zram devices and reset them
-
-        while IFS= read -r _device ; do
-            swapoff "${_device}" || { echo "Failed to disable swap on zram device: ${_device}" ; exit 1 ; }
-            zramctl --reset "${_device}" || { echo "Failed to reset zram device: ${_device}" ; exit 1 ; }
-        done < <(zramctl -n | awk '{print $1}')
-
-        # Check if there is a swap partition or file
-    ;;
-    info                    ) echo "${_zramInfo}" ; exit 0    ;;
+    start                   ) verifyRoot ; startSwap          ;;
+    stop                    ) verifyRoot ; stopSwap           ;;
+    info                    ) echo "${_zramInfo}"    ; exit 0 ;;
     version                 ) echo "${_versionInfo}" ; exit 0 ;;
-    help                    ) echo "${_helpInfo}" ; exit 0    ;;
+    help                    ) echo "${_helpInfo}"    ; exit 0 ;;
     *                       )
         echo "Invalid option: ${1}"
         echo "Use '${_appName} help' for usage information"
