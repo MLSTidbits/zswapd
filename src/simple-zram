@@ -16,6 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+function validateCompression () {
+
+    case "${1}" in
+        lzo|zstd|lz4            ) return 0                                                  ;;
+        *                       ) echo "Unsupported compression algorithm: ${1}" ; return 1 ;;
+    esac
+
+}
+
 set -eo pipefail
 
 # shellcheck disable=SC1091
@@ -29,6 +38,10 @@ _usedRAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
 
 # Do some math to calculate if more then 50% of the RAM is used
 _availableRAM="$(( 100 - (( _usedRAM * 100 ) / _totalRAM) ))"
+
+_swapSize=${SWAP_SIZE:-"2G"}
+
+_compression=${COMPRESSION:-"lzo"}
 
 _versionInfo="$(cat <<EOF
 ${_appName} - version: ${_appVersion}
@@ -50,6 +63,8 @@ EOF
 )"
 
 case "${1}" in info ) echo "${_versionInfo}" ; exit 0 ;; esac
+
+validateCompression "${_compression}"
 
 # Test if we are root
 test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; }
