@@ -18,19 +18,38 @@
 
 set -eo pipefail
 
-NAME=simple-zram
-VERSION=
-
-TOTAL_RAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
-USED_RAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
-
-# Do some math to calculate if more then 50% of the RAM is used
-AVAILABLE_RAM="$((USED_RAM * 100 / TOTAL_RAM))"
-
 # shellcheck disable=SC1091
 source /etc/simple-zram.conf
 
-case "${1}" in -v|--version ) echo "(${NAME}) - version: ${VERSION}" ; exit 0 ;; esac
+_appName=simple-zram
+_appVersion="$(cat /usr/share/docs/${_appName}/version 2>/dev/null || echo "unknown")"
+
+_totalRAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
+_usedRAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
+
+# Do some math to calculate if more then 50% of the RAM is used
+_availableRAM="$(( 100 - (( _usedRAM * 100 ) / _totalRAM) ))"
+
+_versionInfo="$(cat <<EOF
+${_appName} - version: ${_appVersion}
+This script creates and enables a zram swap device with the following parameters:
+
+Total RAM:             $(( _totalRAM / 1024000 ))GB
+Used RAM:              $(( _usedRAM / 1024000 ))GB
+Available RAM:         ${_availableRAM}%
+
+ZRAM Device:           $(zramctl -n | awk '{print $1}')
+
+Swap Size:             ${SWAP_SIZE}
+Swap Usage:            $(free -h | awk '/Swap:/ {print $3}')
+
+Compression Algorithm: ${COMPRESSION}
+
+Copyright (C) 2024 Michael Schaecher <michaelleeschaecher@gmail.com> GNU v3 License
+EOF
+)"
+
+case "${1}" in info ) echo "${_versionInfo}" ; exit 0 ;; esac
 
 # Test if we are root
 test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; }
