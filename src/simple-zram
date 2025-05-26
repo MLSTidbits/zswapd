@@ -81,8 +81,8 @@ if swapon --show | grep -q '/dev/zram' ; then swapoff -a ; fi
 # Reset the zram devices first
 while IFS= read -r LINE ; do zramctl --reset "${LINE}" ; done < <(zramctl -n | awk '{print $1}')
 
-WHICH_ZRAM="$(zramctl --size "${SWAP_SIZE}" --algorithm "${COMPRESSION}" --find)" ||
-{ echo "Failed to create zram device" ; exit 1 ; }
+WHICH_ZRAM="$(zramctl --size "${SWAP_SIZE}" --algorithm "${COMPRESSION}" --find ||
+{ echo "Failed to create zram device" ; exit 1 ; })"
 
 mkswap -L SWAP "${WHICH_ZRAM}" ; swapon "${WHICH_ZRAM}"
 
