@@ -1,55 +1,55 @@
 <div align=center >
-    <h1 style="font-size: 48px; font-weight: bold; color:rgb(112, 34, 111)">Simple ZRAM</h1>
-    <p style="font-size: 24px; font-weight: bold">
+    <h1 style="font-size: 48px; font-weight: bold">Simple ZRAM</h1>
+    <p style="font-size: 18px; font-weight: bold">
         Turn part of your RAM into a compressed block device for faster swapping
         </p>
 </div>
 
 ## Introduction
 
-ZRAM is a compressed block device that uses part of your RAM for a given purpose. Things like tmpfs, logs, and swap can be stored in ZRAM to speed up read/write operations. This is especially useful for systems that run an a slow storage device like an SD card or HDD. For most people, ZRAM is used as a swap device to speed up swapping.
+**Simple ZRAM** is bash script that creates a compressed block device in RAM to be used as a swap space. It is designed to be simple and easy to use. While there are many other tools that can do this, however **Simple ZRAM** is meant to be more intuitive and user-friendly.
 
-### Features
+## Features
 
-- Sets storage size using configuration file (default: 2G)
-- Automatically enables ZRAM on boot
-- Set compression algorithm using configuration file (default: lzo)
-- Check if RAM is 32GB or more
-- Check if less then 50% of RAM is used
+- Create a compressed block device in RAM
+- Automatically detects if less than recommended amount of RAM is available.
+- Automatically detects if ZRAM is already enabled.
+- Automatically detects if enough free RAM is available.
 
 ## Installation
 
-Install the package using the following command:
+There are a few ways to install **Simple ZRAM**: the recommended way is to use the the [Repository](https://repository.howtonebie.com/) and follow the instructions there. Alternatively, you can clone the repository and run the script manually.
 
-```bash
-sudo make install
+### Manual Installation
+
+```console
+git clone https://github.com/MichaelSchaecher/simple-zram.git
+cd simple-zram
 ```
 
-## Configuration
+Copy the scripts to root directory:
 
-The configuration file is located at `/etc/simple-zram.conf`. The default configuration is as follows: But you can change it according to your needs. Just make sure that size is not set to high or you may run into issues.
-
-```bash
-# Set the size of the swap device: Use the suffix K for KiB, M for MiB, G for GiB
-# default: 2G
-SWAP_SIZE="2G"
-
-# Set the compression algorithm to use for the swap device
-# Possible values: lzo, lz4, lz4hc, deflate, 842, zstd
-# default: lzo
-COMPRESSION="lzo"
+```console
+sudo cp -av simple-zram /usr/bin/
+sudo cp -av simple-zram.conf /etc/
+sudo cp -av simple-zram.service /usr/lib/systemd/system/
 ```
 
-Restart the service for the changes to take effect:
+To transpile the manpage file, you need to have `pandoc` installed. If you don't have it, you can install it using your package manager. For example, on Debian-based systems, you can run:
 
-```bash
-sudo systemctl restart simple-zram
+```console
+sudo apt update ; sudo apt install pandoc
+pandoc -s -t man man/simple-zram.8.md -o /usr/share/man/man8/simple-zram.8
 ```
 
-## Uninstallation
+To enable the service, run: `sudo systemctl enable --now simple-zram.service`
 
-To uninstall the package, run the following command:
+### Downloading the DEB Package
 
-```bash
-sudo make uninstall
+You can download the [latest](https://github.com/MichaelSchaecher/simple-zram/releases) DEB package and use `dpkg` to install it:
+
+```console
+sudo dpkg -i simple-zram_*.deb
 ```
+
+Or a GUI package manager like `gdebi` or `Qapt` to install it.
