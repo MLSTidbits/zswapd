@@ -1,0 +1,95 @@
+#!//usr/bin/env bash
+
+set -eo pipefail
+
+# Debian/Ubuntu: dpkg variables
+PACKAGE_NAME="simple-zram"
+
+PACKAGE_VERSION="$(cat doc/version)"
+BUILD_VERSION="$(git rev-parse --short HEAD)"
+
+FULL_VERSION="${PACKAGE_VERSION}-${BUILD_VERSION}"
+
+PACKAGE_ARCH="amd64"
+
+PACKAGE_MAINTAINER="$(git config --get user.name) <$(git config --get user.email)>"
+
+WORKING_DIR="$(pwd)"
+
+BUILD_DIR="out"
+
+case "${1}" in
+    clean               ) echo "Cleaning up..." ; rm -rvf out ; exit 0 ;;
+    *                   ) echo "building package..."                   ;;
+esac
+
+echo "
+Building:     ${PACKAGE_NAME} - (version: ${PACKAGE_VERSION})
+Maintainer:   ${PACKAGE_MAINTAINER}
+
+Architecture: ${PACKAGE_ARCH}
+"
+
+# Create the package directory structure
+mkdir -pv out/{DEBIAN,etc,usr/{bin,lib/systemd/system,share/{doc/${PACKAGE_NAME},man/man8}}}
+
+# Copy the contents of the debian directory
+cp -av debian/* out/DEBIAN/
+
+# Copy the script to the bin directory
+cp -av ${PACKAGE_NAME} out/usr/bin/
+cp -av ${PACKAGE_NAME}.conf out/etc/${PACKAGE_NAME}.conf
+
+# Copy the documentation files
+cp -av doc/* out/usr/share/doc/${PACKAGE_NAME}/
+
+# Copy the systemd service file
+cp -av ${PACKAGE_NAME}.service out/usr/lib/systemd/system/
+
+cp -av COPYING out/usr/share/doc/${PACKAGE_NAME}/copyright
+cp -av README.md out/usr/share/doc/${PACKAGE_NAME}/README.md
+cp -av CODE_OF_CONDUCT.md out/usr/share/doc/${PACKAGE_NAME}/CODE_OF_CONDUCT.md
+
+# Generate the the manpage file
+pandoc -s -t man man/${PACKAGE_NAME}.8.md -o out/usr/share/man/man8/${PACKAGE_NAME}.8
+gzip -f9 out/usr/share/man/man8/${PACKAGE_NAME}.8
+
+sed -i "s/Version:/Version: ${PACKAGE_VERSION}/" out/DEBIAN/control
+sed -i "s/Architecture:/Architecture: ${PACKAGE_ARCH}/" out/DEBIAN/control
+sed -i "s/Maintainer:/Maintainer: ${PACKAGE_MAINTAINER}/" out/DEBIAN/control
+
+# Calculate the sum of the files that are to be installed
+cd "${PACKAGE_DIR}"
+
+if test -f "DEBIAN/md5sums"; then rm "DEBIAN/md5sums" ; fi
+
+cd "${BUILD_DIR}" ; rm -f DEBIAN/md5sums
+
+# Use loop to calculate the md5sum of each file
+find . -type f | while read -r file ; do
+
+    md5sum "${file}" >> "DEBIAN/md5sums"
+    # Do not include the DEBIAN directory in the md5sums file
+    sed -i '/.\/DEBIAN/d' "DEBIAN/md5sums"
+    # Remove the leading " ./" without removing the other "/" in the file path
+    sed -i 's/ .\///' "DEBIAN/md5sums"
+
+done
+
+# If the md5sums file contains the the itself, remove it
+sed -i '/md5sums/d' "DEBIAN/md5sums"
+
+cd "${WORKING_DIR}"
+
+# Get the size of each directory in th out folder.
+TOTAL_SIZE="$(find out/ -type d -exec du -s {} + | sort -n | awk '{print $1}')"
+FIXED_SIZE="$(( TOTAL_SIZE - $(du -s out/DEBIAN | awk '{print $1}') ))"
+
+sed -i "s/Installed-Size:/Installed-Size: ${FIXED_SIZE}/" out/DEBIAN/control
+
+# Build the package
+if dpkg-deb --root-owner-group --build out "${PACKAGE_NAME}_${FULL_VERSION}_${PACKAGE_ARCH}.deb" ; then
+    echo "Package built successfully: ${PACKAGE_NAME}_${FULL_VERSION}_${PACKAGE_ARCH}.deb"
+else
+    echo "Failed to build package." ; exit 1
+fi
