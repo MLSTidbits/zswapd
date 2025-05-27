@@ -1,5 +1,10 @@
 # .gitignore
 .markdownlint.yaml
 
-build/
+out/
 .vscode/
+
+changelog
+changelog.*
+version
+
