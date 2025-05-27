@@ -2,6 +2,8 @@
 
 set -eo pipefail
 
+dpkg-changelog
+
 # Debian/Ubuntu: dpkg variables
 PACKAGE_NAME="simple-zram"
 
