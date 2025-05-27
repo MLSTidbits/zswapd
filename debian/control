@@ -1,13 +1,14 @@
 Package: simple-zram
 Version:
-Section: root
+Section: admin
 Priority: optional
 Architecture:
 Installed-Size:
-Depends: bash, coreutils, awk, util-linux
-Build-Depends: make
+Depends: bash, coreutils, util-linux
+Build-Depends: dpkg-dev (>= 1.19.0), debhelper (>= 9)
 Maintainer:
-Homepage: https://hotonebie.com
+Standards-Version: 4.5.0
+Homepage: https://github.com/MichaelSchaecher/simple-zram
 Description: Create and enable zram swap devices
     This package provides a simple script to create and enable zram swap devices.
 Source: https://github.com/MichaelSchaecher/simple-zram
