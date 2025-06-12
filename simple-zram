@@ -78,7 +78,7 @@ set -euo pipefail
 source /etc/simple-zram.conf
 
 _appName=simple-zram
-_appVersion="$(cat /usr/share/docs/${_appName}/version 2>/dev/null || echo "unknown")"
+_appVersion="$(cat /usr/share/doc/${_appName}/version 2>/dev/null || echo "unknown")"
 
 _totalRAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
 _usedRAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
