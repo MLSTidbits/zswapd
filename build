@@ -1,98 +1,70 @@
-#!//usr/bin/env bash
-
+#!/usr/bin/env bash
 set -eo pipefail
 
-dpkg-changelog
-
-# Debian/Ubuntu: dpkg variables
-PACKAGE_NAME="simple-zram"
-
-PACKAGE_VERSION="$(cat doc/version)"
-BUILD_VERSION="$(git rev-parse --short HEAD)"
-
-FULL_VERSION="${PACKAGE_VERSION}-${BUILD_VERSION}"
-
-PACKAGE_ARCH="amd64"
-
-PACKAGE_MAINTAINER="$(git config --get user.name) <$(git config --get user.email)>"
-
-WORKING_DIR="$(pwd)"
-
+# Config
+PACKAGE_NAME="$(basename "$(pwd)")"
+PACKAGE_ARCH="$(dpkg --print-architecture)"
 BUILD_DIR="out"
+DOC_DIR="${BUILD_DIR}/usr/share/doc/${PACKAGE_NAME}"
+CONTROL_FILE="${BUILD_DIR}/DEBIAN/control"
 
-case "${1}" in
-    clean               ) echo "Cleaning up..." ; rm -rvf out ; exit 0 ;;
-    *                   ) echo "building package..."                   ;;
-esac
+# Clean build
+[[ $1 != clean ]] || { rm -rvf "$BUILD_DIR" debian/changelog doc/version ; exit 0 ; }
 
-echo "
-Building:     ${PACKAGE_NAME} - (version: ${PACKAGE_VERSION})
-Maintainer:   ${PACKAGE_MAINTAINER}
+# Ensure changelog exists
+[[ -f debian/changelog ]] || dpkg-changelog
 
-Architecture: ${PACKAGE_ARCH}
-"
+# Get version
+PACKAGE_VERSION="$(<doc/version)"
+BUILD_VERSION="$(git rev-parse --short HEAD)"
+[[ "$PACKAGE_VERSION" == *"$BUILD_VERSION"* ]] || PACKAGE_VERSION="${PACKAGE_VERSION}-${BUILD_VERSION}"
+echo "$PACKAGE_VERSION" | tee doc/version
 
-# Create the package directory structure
-mkdir -pv out/{DEBIAN,etc/modules-load.d,usr/{bin,lib/systemd/system,share/{doc/${PACKAGE_NAME},man/man8}}}
+echo -e "\nBuilding ${PACKAGE_NAME} ${PACKAGE_VERSION} (${PACKAGE_ARCH})"
 
-# Copy the contents of the debian directory
-cp -av debian/* out/DEBIAN/
+# Directory structure
+mkdir -p \
+    "$BUILD_DIR"/{DEBIAN,etc/modules-load.d,usr/{bin,lib/systemd/system,share/man/man8}} \
+    "$DOC_DIR"
 
-# Copy the script to the bin directory
-cp -av ${PACKAGE_NAME} out/usr/bin/
-cp -av ${PACKAGE_NAME}.conf out/etc/${PACKAGE_NAME}.conf
-cp -av zram.conf out/etc/modules-load.d/
+# Copy files
+cp -av doc/* "$DOC_DIR/"
+cp -av COPYING "$DOC_DIR/copyright"
+cp -av README.md "$DOC_DIR/readme.md"
+cp -av CODE_OF_CONDUCT.md "$DOC_DIR/code_of_conduct.md"
 
-# Copy the documentation files
-cp -av doc/* out/usr/share/doc/${PACKAGE_NAME}/
+cp -av ./*.service "$BUILD_DIR/usr/lib/systemd/system/"
+cp -av zram.conf "$BUILD_DIR/etc/modules-load.d/simple-zram.conf"
+cp -av debian/* "$BUILD_DIR/DEBIAN/"
 
-# Copy the systemd service file
-cp -av ${PACKAGE_NAME}.service out/usr/lib/systemd/system/
+# Calculate Installed-Size
+SIZE=$(du -s --exclude=DEBIAN "$BUILD_DIR" | awk '{print $1}')
 
-cp -av COPYING out/usr/share/doc/${PACKAGE_NAME}/copyright
-cp -av README.md out/usr/share/doc/${PACKAGE_NAME}/README.md
-cp -av CODE_OF_CONDUCT.md out/usr/share/doc/${PACKAGE_NAME}/CODE_OF_CONDUCT.md
+# Patch control file
+awk -v ver="$PACKAGE_VERSION" \
+    -v arch="$PACKAGE_ARCH" \
+    -v size="$SIZE" '
+    /^Version:/        { print "Version: " ver; next }
+    /^Architecture:/   { print "Architecture: " arch; next }
+    /^Installed-Size:/ { print "Installed-Size: " size; next }
+                       { print }
+' "$CONTROL_FILE" > "${CONTROL_FILE}.tmp" && mv "${CONTROL_FILE}.tmp" "$CONTROL_FILE"
 
-# Generate the the manpage file
-pandoc -s -t man man/${PACKAGE_NAME}.8.md -o out/usr/share/man/man8/${PACKAGE_NAME}.8
-gzip -f9 out/usr/share/man/man8/${PACKAGE_NAME}.8
+chmod +x "$BUILD_DIR/DEBIAN/"{postinst,prerm}
 
-sed -i "s/Version:/Version: ${PACKAGE_VERSION}/" out/DEBIAN/control
-sed -i "s/Architecture:/Architecture: ${PACKAGE_ARCH}/" out/DEBIAN/control
-sed -i "s/Maintainer:/Maintainer: ${PACKAGE_MAINTAINER}/" out/DEBIAN/control
-
-# Calculate the sum of the files that are to be installed
-cd "${PACKAGE_DIR}"
-
-if test -f "DEBIAN/md5sums"; then rm "DEBIAN/md5sums" ; fi
-
-cd "${BUILD_DIR}" ; rm -f DEBIAN/md5sums
-
-# Use loop to calculate the md5sum of each file
-find . -type f | while read -r file ; do
-
-    md5sum "${file}" >> "DEBIAN/md5sums"
-    # Do not include the DEBIAN directory in the md5sums file
-    sed -i '/.\/DEBIAN/d' "DEBIAN/md5sums"
-    # Remove the leading " ./" without removing the other "/" in the file path
-    sed -i 's/ .\///' "DEBIAN/md5sums"
-
+# Build man pages
+for m in man/*.md; do
+    base=$(basename "$m" .md)
+    out="${BUILD_DIR}/usr/share/man/man8/${base}"
+    pandoc "$m" -s -t man -o "$out"
+    gzip -f9 "$out"
 done
 
-# If the md5sums file contains the the itself, remove it
-sed -i '/md5sums/d' "DEBIAN/md5sums"
+# Generate md5sums
+cd "$BUILD_DIR"
+find . -type f ! -path './DEBIAN/md5sums' -exec md5sum "{}" + |
+    sed -e '/\.\/DEBIAN\//d' -e 's| \./| |' > DEBIAN/md5sums
+cd - >/dev/null
 
-cd "${WORKING_DIR}"
-
-# Get the size of each directory in th out folder.
-TOTAL_SIZE="$(find out/ -type d -exec du -s {} + | sort -n | awk '{print $1}')"
-FIXED_SIZE="$(( TOTAL_SIZE - $(du -s out/DEBIAN | awk '{print $1}') ))"
-
-sed -i "s/Installed-Size:/Installed-Size: ${FIXED_SIZE}/" out/DEBIAN/control
-
-# Build the package
-if dpkg-deb --root-owner-group --build out "${PACKAGE_NAME}_${FULL_VERSION}_${PACKAGE_ARCH}.deb" ; then
-    echo "Package built successfully: ${PACKAGE_NAME}_${FULL_VERSION}_${PACKAGE_ARCH}.deb"
-else
-    echo "Failed to build package." ; exit 1
-fi
+# Build package
+dpkg-deb --build --root-owner-group "$BUILD_DIR" "${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"

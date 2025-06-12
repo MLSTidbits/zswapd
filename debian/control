@@ -6,7 +6,7 @@ Architecture:
 Installed-Size:
 Depends: bash, coreutils, util-linux
 Build-Depends: dpkg-dev (>= 1.19.0), debhelper (>= 9)
-Maintainer:
+Maintainer: Michael L. Schaecher <michaelleeschaecher@gmail.com>
 Standards-Version: 4.5.0
 Homepage: https://github.com/MichaelSchaecher/simple-zram
 Description: Create and enable zram swap devices
