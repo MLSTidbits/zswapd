@@ -1,8 +1,10 @@
-<div align=center >
-    <h1 style="font-size: 48px; font-weight: bold">Simple ZRAM</h1>
-    <p style="font-size: 18px; font-weight: bold">
-        Turn part of your RAM into a compressed block device for faster swapping
-        </p>
+<div
+  align="center">
+  <img
+    src="image/logo.svg"
+    alt="Simple ZRAM Logo"
+    style="display: block; margin: 0 auto;"
+  />
 </div>
 
 ## Introduction
