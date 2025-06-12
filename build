@@ -33,6 +33,8 @@ cp -av README.md "$DOC_DIR/readme.md"
 cp -av CODE_OF_CONDUCT.md "$DOC_DIR/code_of_conduct.md"
 
 cp -av ./*.service "$BUILD_DIR/usr/lib/systemd/system/"
+cp -av $PACKAGE_NAME "$BUILD_DIR/usr/bin/"
+cp -av $PACKAGE_NAME.conf "$BUILD_DIR/etc/"
 cp -av zram.conf "$BUILD_DIR/etc/modules-load.d/simple-zram.conf"
 cp -av debian/* "$BUILD_DIR/DEBIAN/"
 
