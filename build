@@ -33,7 +33,7 @@ Architecture: ${PACKAGE_ARCH}
 "
 
 # Create the package directory structure
-mkdir -pv out/{DEBIAN,etc,usr/{bin,lib/systemd/system,share/{doc/${PACKAGE_NAME},man/man8}}}
+mkdir -pv out/{DEBIAN,etc/modules-load.d,usr/{bin,lib/systemd/system,share/{doc/${PACKAGE_NAME},man/man8}}}
 
 # Copy the contents of the debian directory
 cp -av debian/* out/DEBIAN/
@@ -41,6 +41,7 @@ cp -av debian/* out/DEBIAN/
 # Copy the script to the bin directory
 cp -av ${PACKAGE_NAME} out/usr/bin/
 cp -av ${PACKAGE_NAME}.conf out/etc/${PACKAGE_NAME}.conf
+cp -av zram.conf out/etc/modules-load.d/
 
 # Copy the documentation files
 cp -av doc/* out/usr/share/doc/${PACKAGE_NAME}/

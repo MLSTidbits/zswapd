@@ -3,16 +3,24 @@
 set -e
 
 case "${1}" in
-    configure)
-        if systemctl is-active --quiet simple-zram.service; then
-            systemctl daemon-reload
-        else
-            systemctl restart simple-zram.service
-        fi
+    configure                                       )
+        # Restart the systemd-modules-load service to ensure the zram module is loaded
+        systemctl restart systemd-modules-load.service
+
+        # Check if simple-zram is already enabled if so reload the daemon
+        case "$(systemctl is-enabled simple-zram.service)" in
+            enabled             ) systemctl daemon-reload ; systemctl restart simple-zram.service ;;
+            disabled            ) systemctl enable --now simple-zram.service                      ;;
+            *)
+                echo "simple-zram service is in an unknown state, please check manually."
+                exit 1
+            ;;
+        esac
+
     ;;
-    abort-upgrade|abort-remove|abort-deconfigure)
+    abort-upgrade|abort-remove|abort-deconfigure    )
     ;;
-    *)
-        echo "postinst called with unknown argument: ${1}" >&2
-        exit 0
+    *                                               )
+        echo "postinst called with unknown argument: ${1}" >&2 ; exit 0
+    ;;
 esac
