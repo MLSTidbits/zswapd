@@ -18,7 +18,6 @@ CONTROL_FILE="${BUILD_DIR}/DEBIAN/control"
 PACKAGE_VERSION="$(<doc/version)"
 BUILD_VERSION="$(git rev-parse --short HEAD)"
 [[ "$PACKAGE_VERSION" == *"$BUILD_VERSION"* ]] || PACKAGE_VERSION="${PACKAGE_VERSION}-${BUILD_VERSION}"
-echo "$PACKAGE_VERSION" | tee doc/version
 
 echo -e "\nBuilding ${PACKAGE_NAME} ${PACKAGE_VERSION} (${PACKAGE_ARCH})"
 
