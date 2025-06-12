@@ -24,71 +24,55 @@ function sysLog () { logger -t "${_appName}" "${@}"; }
 
 function startSwap () {
 
+        local priority device
+
         # Does a zram device already exist?
-        ! zramctl -n | grep -q '/dev/zram' || {
-            sysLog "ZRAM device already exists, stopping it first" ; exit 0
-        }
+        ! zramctl -n | grep -q '/dev/zram' || { sysLog "device already exists ( $(zramctl -n) )" ; exit 0 ;}
 
         # Validate the compression algorithm is supported.
         case "${_swapAlgorithm}" in
             lzo|zstd|lz4    ) ;;
-            *               )
-                sysLog "Unsupported compression algorithm: ${_swapAlgorithm}" ; exit 1
-            ;;
+            *               ) sysLog "Unsupported compression algorithm: ${_swapAlgorithm}" ; exit 1 ;;
         esac
 
-        # Make sure that the required amount of RAM is available (32Gb minimum)
-        test "${_totalRAM}" -gt "33554432" || {
-            sysLog "$(( _totalRAM / 1024000 ))GB of RAM is available, but at least 32GB is required!" ; exit 1
-        }
-
-        test "${_availableRAM}" -gt "50" || {
-            sysLog "${_availableRAM}% of RAM is available, but at least 50% is required" ; exit 1
-        }
+        # Make sure that the required amount of RAM is available (32Gb minimum and 50% free)
+        (( _totalRAM > 33554432 )) || { sysLog "$((_totalRAM / 1024000))GB RAM available, 32GB required."; exit 1; }
+        (( _availableRAM > 50 )) || { sysLog "Only ${_availableRAM}% RAM available, 50% required."; exit 1; }
 
         # If more then 1 zram device then override swap priority
-        test "${_swapDevices}" -lt "1" || _swapPriority=$(( _swapPriority / _swapDevices ))
-
-        _count="0"
+        test "${_swapDevices}" -lt "1" || priority=$(( _swapPriority / _swapDevices ))
 
         # Create the zram devices
-        while test "${_count}" -lt "${_swapDevices}" ; do
-            _device="$(zramctl --size "${_swapSize}G" --algorithm "${_swapAlgorithm}" --find || {
-                sysLog "Failed to create zram device!" ; exit 1
-            })"
-
-            mkswap -L SWAP "${_device}" || {
-                sysLog "Failed to create swap on zram device: ${_device}" ; exit 1
+        for ((i = 0; i < _swapDevices; i++)); do
+            device=$(zramctl --size "${_swapSize}G" --algorithm "$_swapAlgorithm" --find) || {
+                log "Failed to create zram device."; exit 1;
             }
 
-            if test -n "${_swapPriority}" && swapon --priority "${_swapPriority}" "${_device}" ; then
-                sysLog "Failed to enable swap on zram device: ${_device}" ; exit 1
-            elif test -z "${_swapPriority}" && swapon "${_device}" ; then
-                sysLog "Failed to enable swap on zram device: ${_device}" ; exit 1
+            mkswap -L SWAP "$device" || { log "Failed to mkswap: $device"; exit 1; }
+
+            if ! swapon --priority "${priority}" "$device" 2>/dev/null; then
+                if ! swapon "$device"; then
+                    log "Failed to enable swap: $device"; exit 1;
+                fi
             fi
 
-            sysLog "Created zram device: ${_device} with size: ${_swapSize}G and algorithm: ${_swapAlgorithm}"
-
-            _count=$(( _count + 1 ))
+            log "ZRAM enabled: $device | Size: ${_swapSize}G | Algorithm: $_swapAlgorithm"
         done
 
 }
 
 function stopSwap () {
 
-    while IFS= read -r _device ; do
-        swapoff "${_device}" || {
-            sysLog "Failed to disable swap on zram device: ${_device}" ; exit 1
-        }
-        zramctl --reset "${_device}" || {
-            sysLog "Failed to reset zram device: ${_device}" ; exit 1
-        }
-        sysLog "Disabled and reset zram device: ${_device}"
-    done < <(zramctl -n | awk '{print $1}')
+    zramctl -n | awk '{print $1}' | while read -r device; do
+        swapoff "$device" || { sysLog "Failed to disable swap: $device"; exit 1; }
+        zramctl --reset "$device" || { sysLog "Failed to reset: $device"; exit 1; }
+
+        sysLog "ZRAM reset: $device"
+    done
 
 }
 
-set -eo pipefail
+set -euo pipefail
 
 # shellcheck disable=SC1091
 source /etc/simple-zram.conf
@@ -126,7 +110,7 @@ _helpInfo="$(cat <<EOF
 ${_versionInfo}
 This script creates and enables a zram swap device with the following parameters:
 
-Usage: ${_appName} [start|stop|info|help]
+Usage: ${_appName} [OPTIONS]
 
 Options:
   start                   Start the zram swap device with the configured parameters
@@ -144,15 +128,15 @@ ${_versionInfo}
 ITEM                        VALUE
 -----------------------------------------------------------
 
-Total RAM:                  $(echo "${_getRAM}" | tr -d 'a-zA-Z' | awk '{print $2}') GB
-Used RAM:                   $(echo "${_getRAM}" | tr -d 'a-zA-Z' | awk '{print $3}') GB
+Total RAM:                  $(echo "${_getRAM}" | awk '{print $2}')
+Used RAM:                   $(echo "${_getRAM}" | awk '{print $3}')
 Available RAM:              ${_availableRAM}%
 
 Devices Number:             ${_swapDevices}
 ZRAM Devices:               $(zramctl -n | awk '{print $1}')
 
-Swap Size:                  $(echo "${_getSwap}" | tr -d 'a-zA-Z' | awk '{print $2}') GB
-Swap Usage:                 $(echo "${_getSwap}" | tr -d 'a-zA-Z' | awk '{print $3}') GB
+Swap Size:                  $(echo "${_getSwap}" | awk '{print $2}')
+Swap Usage:                 $(echo "${_getSwap}" | awk '{print $3}')
 
 Compression Algorithm:      ${_swapAlgorithm}
 
