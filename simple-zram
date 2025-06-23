@@ -17,60 +17,126 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # Test if we are root
-function verifyRoot () { test "$(id -u)" -eq 0 || { echo "This script must be run as root" ; exit 1 ; } ;}
+function root_check () {
 
-# Log messages to syslog
-function sysLog () { logger -t "${_appName}" "${@}"; }
+    (( "$(id -u)" == 0 )) || { echo "This script must be run as root" ; exit 1 ; }
+
+}
+
+# shellcheck disable=SC2317
+function sign_handler () {
+
+    local _signal; _signal="${1:-SIGINT}"
+
+    case "${_signal}" in
+        SIGINT|SIGTERM|SIGQUIT  )
+            event_log "info" "Received signal: ${_signal}. Stopping ${_appName} service ... "
+        ;;
+        *                       )
+            event_log "warning" "Received unknown signal: ${_signal}"
+        ;;
+    esac
+
+    exit 0
+
+}
+
+function event_log () {
+
+    local _eventType="${1:-info}"
+    local _eventMessage="${2:-No message provided}"
+
+    case "${_eventType}" in
+        info|warning|error|critical )
+            logger -t "${_appName}" -p user.${_eventType} "${_eventMessage}"
+        ;;
+        *                           )
+            logger -t "${_appName}" -p user.unknown "${_eventMessage}"
+        ;;
+    esac
+
+}
 
 function startSwap () {
 
-        local priority device
+    root_check
 
-        # Does a zram device already exist?
-        ! zramctl -n | grep -q '/dev/zram' || { sysLog "device already exists ( $(zramctl -n) )" ; exit 0 ;}
+    local priority device
 
-        # Validate the compression algorithm is supported.
-        case "${_swapAlgorithm}" in
-            lzo|zstd|lz4    ) ;;
-            *               ) sysLog "Unsupported compression algorithm: ${_swapAlgorithm}" ; exit 1 ;;
-        esac
+    # Does a zram device already exist?
+    ! zramctl -n | grep -q '/dev/zram' || { event_log "info" "ZRAM device already exists." ; exit 0 ;}
 
-        # Make sure that the required amount of RAM is available (32Gb minimum and 50% free)
-        (( _totalRAM > 33554432 )) || { sysLog "$((_totalRAM / 1024000))GB RAM available, 32GB required."; exit 1; }
-        (( _availableRAM > 50 )) || { sysLog "Only ${_availableRAM}% RAM available, 50% required."; exit 1; }
+    # Validate the compression algorithm is supported.
+    case "${_swapAlgorithm}" in
+        lzo|zstd|lz4    ) ;;
+        *               )
+            event_log "error" "Unsupported compression algorithm: ${_swapAlgorithm}"
+            exit 1
+        ;;
+    esac
 
-        # If more then 1 zram device then override swap priority
-        test "${_swapDevices}" -lt "1" || priority=$(( _swapPriority / _swapDevices ))
+    # Make sure that the required amount of RAM is available (32Gb minimum and 50% free)
+    (( _totalRAM > 33554432 )) || {
+        event_log "error" "Insufficient RAM: ${_totalRAM} bytes available, 32GB required."; exit 1; }
 
-        # Create the zram devices
-        for ((i = 0; i < _swapDevices; i++)); do
-            device=$(zramctl --size "${_swapSize}G" --algorithm "$_swapAlgorithm" --find) || {
-                log "Failed to create zram device."; exit 1;
-            }
+    (( _availableRAM > 50 )) || {
+        event_log "error" "Insufficient RAM: ${_availableRAM}% available, 50% required." ; exit 1; }
 
-            mkswap -L SWAP "$device" || { log "Failed to mkswap: $device"; exit 1; }
+    # If more then 1 zram device then override swap priority
+    test "${_swapDevices}" -lt "1" || priority=$(( _swapPriority / _swapDevices ))
 
-            if ! swapon --priority "${priority}" "$device" 2>/dev/null; then
-                if ! swapon "$device"; then
-                    log "Failed to enable swap: $device"; exit 1;
-                fi
+    # Create the zram devices
+    for ((i = 0; i < _swapDevices; i++)); do
+        device=$(zramctl --size "${_swapSize}G" --algorithm "$_swapAlgorithm" --find) || {
+            event_log "error" "Failed to create zram device." ; exit 1 ; }
+
+        mkswap -L SWAP "$device" || { event_log "error" "Failed to mkswap on device: $device"; exit 1; }
+
+        if ! swapon --priority "${priority}" "$device" 2>/dev/null; then
+            if ! swapon "$device"; then
+                event_log "error" "Failed to enable swap on device: $device"
+                exit 1;
             fi
+        fi
 
-            log "ZRAM enabled: $device | Size: ${_swapSize}G | Algorithm: $_swapAlgorithm"
-        done
+        event_log "info" "ZRAM device created: $device | Size: ${_swapSize}G | Algorithm: $_swapAlgorithm | Priority: ${priority}"
+
+    done
 
 }
 
 function stopSwap () {
 
-    zramctl -n | awk '{print $1}' | while read -r device; do
-        swapoff "$device" || { sysLog "Failed to disable swap: $device"; exit 1; }
-        zramctl --reset "$device" || { sysLog "Failed to reset: $device"; exit 1; }
+    root_check
 
-        sysLog "ZRAM reset: $device"
+    zramctl -n | awk '{print $1}' | while read -r device; do
+        swapoff "$device" || { event_log "error" "Failed to disable swap on device: $device"; exit 1; }
+        zramctl --reset "$device" || { event_log "error" "Failed to reset zram device: $device"; exit 1; }
+
+        event_log "info" "ZRAM device reset: $device"
     done
 
 }
+
+function edit_conf () {
+
+    echo "Opening configuration file for editing..."
+
+    root_check
+
+    # Open the configuration file in the default editor
+    if test -n "${_editor}" ; then
+        "${_editor}" /etc/ddnsd.conf || {
+            echo "Failed to open configuration file in ${_editor}. Please check if the editor is installed."
+            exit 1
+        }
+    else
+        echo "No editor set. Please set the EDITOR environment variable to your preferred text editor."
+        exit 1
+    fi
+
+}
+
 
 set -euo pipefail
 
@@ -94,6 +160,11 @@ _swapPriority=${SWAP_PRIORITY:-"100"}
 
 _getRAM="$(free -h | grep -i 'mem')"
 _getSwap="$(free -h | grep -i 'swap')"
+
+_editor="${EDITOR:-"nano"}"
+
+# Trap errors and log them
+trap sign_handler SIGINT SIGTERM SIGQUIT
 
 _copyRightInfo="$(cat <<EOF
 Copyright (C) 2024 Michael Schaecher  <michaelleeschaecher@gmail.com> GNU v3 License
@@ -138,15 +209,19 @@ ZRAM Devices:               $(zramctl -n | awk '{print $1}')
 Swap Size:                  $(echo "${_getSwap}" | awk '{print $2}')
 Swap Usage:                 $(echo "${_getSwap}" | awk '{print $3}')
 
+Service:                    $(systemctl is-active --quiet "${_appName}.service" &&
+                                echo "active" || echo "inactive")
+
 Compression Algorithm:      ${_swapAlgorithm}
 
 EOF
 )"
 
 case "${1}" in
-    start                   ) verifyRoot ; startSwap          ;;
-    stop                    ) verifyRoot ; stopSwap           ;;
-    info                    ) echo "${_zramInfo}"    ; exit 0 ;;
+    start                   ) startSwap                       ;;
+    stop                    ) stopSwap                        ;;
+    status                  ) echo "${_zramInfo}"    ; exit 0 ;;
+    config                  ) edit_conf                       ;;
     version                 ) echo "${_versionInfo}" ; exit 0 ;;
     help                    ) echo "${_helpInfo}"    ; exit 0 ;;
     *                       )
