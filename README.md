@@ -1,9 +1,9 @@
-<div
-  align="center">
+<div align="right">
   <img
-    src="image/logo.svg"
-    alt="Simple ZRAM Logo"
-    style="display: block; margin: 0 auto;"
+    src="images/logo.svg"
+    alt="Repository Logo"
+    width="auto"
+    height="360"
   />
 </div>
 
