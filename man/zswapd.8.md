@@ -62,7 +62,6 @@ Set the priority of the swap device. Higher values indicate higher priority.
 
 :   Example: `SWAP_PRIORITY=100`
 
-
 ## SWAP_ALGORITHM
 
 Set the compression algorithm for the ZRAM device. Common options include `lzo`, `lz4`, and `zstd`.
