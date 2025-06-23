@@ -1,0 +1,17 @@
+# shellcheck disable=SC2148
+_simple_zram_complete () {
+
+    local cur prev commands
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    # shellcheck disable=SC2034
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    # Main commands
+    commands="start stop restart status config help version"
+
+    mapfile -t COMPREPLY < <(compgen -W "${commands}" -- "${cur}")
+}
+
+# Register the completion function for ddnsd
+complete -F _simple_zram_complete simple-zram
