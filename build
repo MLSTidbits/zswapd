@@ -38,6 +38,12 @@ cp -av $PACKAGE_NAME.conf "$BUILD_DIR/etc/"
 cp -av zram.conf "$BUILD_DIR/etc/modules-load.d/simple-zram.conf"
 cp -av debian/* "$BUILD_DIR/DEBIAN/"
 
+# Install bash completion if available
+if test -f bash-completion; then
+    mkdir -p "$BUILD_DIR/usr/share/bash-completion/completions"
+    cp -av bash-completion "$BUILD_DIR/usr/share/bash-completion/completions/$PACKAGE_NAME"
+fi
+
 # Calculate Installed-Size
 SIZE=$(du -s --exclude=DEBIAN "$BUILD_DIR" | awk '{print $1}')
 
