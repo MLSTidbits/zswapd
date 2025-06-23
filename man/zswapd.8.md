@@ -28,8 +28,11 @@ _start_
 _stop_
 : Stop the ZRAM device and disable it as swap space. This will remove the ZRAM device and free up the memory used for swap.
 
-_info_
+_status_
 : Display information about the current state of the ZRAM device, including its size, usage, and swap status.
+
+_config_
+: Open the configuration file in _Nano_ editor for easy editing. This allows you to change the size of the ZRAM device, the compression algorithm, and other parameters.
 
 _help_
 : Display help information about the script and its options.

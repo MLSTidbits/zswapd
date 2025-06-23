@@ -184,10 +184,12 @@ This script creates and enables a zram swap device with the following parameters
 Usage: ${_appName} [OPTIONS]
 
 Options:
-  start                   Start the zram swap device with the configured parameters
-  stop                    Stop the zram swap device and reset it
-  info                    Show version and configuration information
-  help                    Show this help message
+    start                   Start the zram swap device with the configured parameters
+    stop                    Stop the zram swap device and reset it
+    status                  Show the current status of the zram swap device
+    config                  Edit the configuration file for the zram swap device
+    version                 Show the version information
+    help                    Show this help message
 
 ${_copyRightInfo}
 EOF
