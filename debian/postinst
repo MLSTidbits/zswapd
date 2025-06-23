@@ -7,12 +7,12 @@ case "${1}" in
         # Restart the systemd-modules-load service to ensure the zram module is loaded
         systemctl restart systemd-modules-load.service
 
-        # Check if simple-zram is already enabled if so reload the daemon
-        case "$(systemctl is-enabled simple-zram.service)" in
-            enabled             ) systemctl daemon-reload ; systemctl restart simple-zram.service ;;
-            disabled            ) systemctl enable --now simple-zram.service                      ;;
+        # Check if zswapd is already enabled if so reload the daemon
+        case "$(systemctl is-enabled zswapd.service)" in
+            enabled             ) systemctl daemon-reload ; systemctl restart zswapd.service ;;
+            disabled|inactive   ) systemctl enable --now zswapd.service                      ;;
             *                   )
-                echo "simple-zram service is in an unknown state, please check manually." >&2
+                echo "zswapd service is in an unknown state, please check manually." >&2
             ;;
         esac
 
