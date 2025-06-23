@@ -1,7 +1,7 @@
 <div align="right">
   <img
     src="images/logo.svg"
-    alt="Repository Logo"
+    alt="zswapd logo"
     width="auto"
     height="360"
   />
@@ -9,7 +9,7 @@
 
 ## Introduction
 
-**Simple ZRAM** is bash script that creates a compressed block device in RAM to be used as a swap space. It is designed to be simple and easy to use. While there are many other tools that can do this, however **Simple ZRAM** is meant to be more intuitive and user-friendly.
+**ZSwapD** is bash script that creates a compressed block device in RAM to be used as a swap space. It is designed to be simple and easy to use. While there are many other tools that can do this, however **ZSwapD** is meant to be more intuitive and user-friendly.
 
 ## Features
 
@@ -20,38 +20,39 @@
 
 ## Installation
 
-There are a few ways to install **Simple ZRAM**: the recommended way is to use the the [Repository](https://repository.howtonebie.com/) and follow the instructions there. Alternatively, you can clone the repository and run the script manually.
+There are a few ways to install **ZSwapD**: the recommended way is to use the the [Repository](https://repository.howtonebie.com/) and follow the instructions there. Alternatively, you can clone the repository and run the script manually.
 
 ### Manual Installation
 
 ```console
-git clone https://github.com/MichaelSchaecher/simple-zram.git
-cd simple-zram
+git clone https://github.com/MichaelSchaecher/zswapd.git
+cd zswapd
 ```
 
 Copy the scripts to root directory:
 
 ```console
-sudo cp -av simple-zram /usr/bin/
-sudo cp -av simple-zram.conf /etc/
-sudo cp -av simple-zram.service /usr/lib/systemd/system/
+sudo cp -av zswapd /usr/bin/
+sudo cp -av zswapd.conf /etc/
+sudo cp -av zswapd.service /usr/lib/systemd/system/
+sudo cp -av zram.conf /etc/modprobe.d/zswapd.conf
 ```
 
 To transpile the manpage file, you need to have `pandoc` installed. If you don't have it, you can install it using your package manager. For example, on Debian-based systems, you can run:
 
 ```console
 sudo apt update ; sudo apt install pandoc
-pandoc -s -t man man/simple-zram.8.md -o /usr/share/man/man8/simple-zram.8
+pandoc -s -t man man/zswapd.8.md -o /usr/share/man/man8/zswapd.8
 ```
 
-To enable the service, run: `sudo systemctl enable --now simple-zram.service`
+To enable the service, run: `sudo systemctl enable --now zswapd.service`
 
 ### Downloading the DEB Package
 
-You can download the [latest](https://github.com/MichaelSchaecher/simple-zram/releases) DEB package and use `dpkg` to install it:
+You can download the [latest](https://github.com/MichaelSchaecher/zswapd/releases) DEB package and use `dpkg` to install it:
 
 ```console
-sudo dpkg -i simple-zram_*.deb
+sudo dpkg -i zswapd_*.deb
 ```
 
 Or a GUI package manager like `gdebi` or `Qapt` to install it.
