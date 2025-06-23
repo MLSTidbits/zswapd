@@ -1,5 +1,5 @@
 # shellcheck disable=SC2148
-_simple_zram_complete () {
+_zswapd_complete () {
 
     local cur prev commands
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -14,4 +14,4 @@ _simple_zram_complete () {
 }
 
 # Register the completion function for ddnsd
-complete -F _simple_zram_complete simple-zram
+complete -F _zswapd_complete zswapd

@@ -4,7 +4,7 @@ After = local-fs.target
 
 [Service]
 Type = oneshot
-ExecStart = /usr/bin/simple-zram start
+ExecStart = /usr/bin/zswapd start
 RemainAfterExit = yes
 Restart = on-failure
 RestartSteps = 5

@@ -1,14 +1,18 @@
-Package: simple-zram
+Package: zswapd
 Version:
 Section: admin
 Priority: optional
 Architecture:
 Installed-Size:
 Depends: bash, coreutils, util-linux
+Conflicts: zram-tools, simple-zram
 Build-Depends: dpkg-dev (>= 1.19.0), debhelper (>= 9)
 Maintainer: Michael L. Schaecher <michaelleeschaecher@gmail.com>
 Standards-Version: 4.5.0
-Homepage: https://github.com/MichaelSchaecher/simple-zram
-Description: Create and enable zram swap devices
-    This package provides a simple script to create and enable zram swap devices.
-Source: https://github.com/MichaelSchaecher/simple-zram
+Homepage: https://github.com/MichaelSchaecher/zswapd
+Description: zswapd is a daemon to manage zram devices
+ zswapd is a simple daemon to manage zram devices. It creates and manages
+ zram devices, allowing for efficient memory compression and swap management.
+ It is designed to be lightweight and easy to use, providing a straightforward
+ interface for system administrators to configure and monitor zram usage.
+Source: https://github.com/MichaelSchaecher/zswapd
