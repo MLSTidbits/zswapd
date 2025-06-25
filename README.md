@@ -1,6 +1,6 @@
 <div align="right">
   <img
-    src="images/zswapd.png"
+    src="images/logo.png"
     alt="Zswapd logo"
     width="auto"
     height="360"
