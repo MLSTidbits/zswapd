@@ -1,6 +1,6 @@
 ---
-title: ZSWAPD
-section: 8
+title: zswapd
+section: 1
 header: Manual Page
 footer: SWAP to ZRAM Device
 author: Michael Lee Schaecher <michaelleeschaecher@gmail.com>
