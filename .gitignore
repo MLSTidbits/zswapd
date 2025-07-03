@@ -15,7 +15,7 @@ debian/grub-*
 debian/files
 
 debian/*.ex
-version
+docs/version
 
 debian/zswapd/
 debian/zswapd.*
