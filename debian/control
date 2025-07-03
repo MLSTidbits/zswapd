@@ -1,17 +1,24 @@
-Package: zswapd
-Version:
+Source: zswapd
 Section: admin
 Priority: optional
-Architecture:
-Installed-Size:
-Depends: bash, coreutils, util-linux
-Conflicts: zram-tools, simple-zram
-Build-Depends: dpkg-dev (>= 1.19.0), debhelper (>= 9)
-Maintainer: Michael L. Schaecher <michaelleeschaecher@gmail.com>
+Maintainer: Michael Schaecher <michaelleeschaecher@gmail.com>
+Rules-Requires-Root: no
+Build-Depends:
+ dpkg-changelog, git, debhelper (>= 12), dh-make, lintian (>= 2.5.0), pandoc
+Standards-Version: 4.6.2
 Homepage: https://github.com/MichaelSchaecher/zswapd
-Description: zswapd is a daemon to manage zram devices
- zswapd is a simple daemon to manage zram devices. It creates and manages
- zram devices, allowing for efficient memory compression and swap management.
- It is designed to be lightweight and easy to use, providing a straightforward
- interface for system administrators to configure and monitor zram usage.
-Source: https://github.com/MichaelSchaecher/zswapd
+Vcs-Browser: https://github.com/MichaelSchaecher/zswapd
+Vcs-Git: https://github.com/MichaelSchaecher/zswapd.git
+
+Package: zswapd
+Architecture: any
+Multi-Arch: foreign
+Depends: bash, coreutils, util-linux, bash-completion, systemd, nano
+Description: Setup zswapd  as your swap partition.
+ zswapd is a daemon that manages the zswap compressed cache for swap pages.
+ It allows you to configure the size of the cache, the compression algorithm,
+ and other parameters to optimize performance.
+ .
+ This package provides a systemd service to manage zswapd automatically.
+ It also includes a configuration file for easy customization.
+
