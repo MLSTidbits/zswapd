@@ -1,10 +1,20 @@
-# .gitignore
-.markdownlint.yaml
-
-out/
 .vscode/
 
-changelog
-changelog.*
+build/
+dist/
 
+changelog
+
+*.gz
 *.deb
+
+# Ignore the from a dpkg-buildpackage run
+debian/.debhelper/
+debian/grub-*/
+debian/grub-*
+debian/files
+
+debian/*.ex
+version
+
+debian/zswapd/
