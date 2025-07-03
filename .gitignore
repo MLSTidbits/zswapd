@@ -18,3 +18,4 @@ debian/*.ex
 version
 
 debian/zswapd/
+debian/zswapd.*
