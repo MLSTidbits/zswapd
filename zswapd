@@ -43,8 +43,10 @@ function sign_handler () {
 
 function event_log () {
 
-    local _eventType="${1:-info}"
-    local _eventMessage="${2:-No message provided}"
+    local _eventType _eventMessage
+
+    _eventType="${1:-unknown}"
+    _eventType="${2:-No message provided}"
 
     case "${_eventType}" in
         info|warning|error|critical )
