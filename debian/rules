@@ -24,7 +24,7 @@
 app = $(CURDIR)/zswapd
 app_conf = $(CURDIR)/zswapd.conf
 app_service = $(CURDIR)/zswapd.service
-app_completion = $(CURDIR)/zswapd.bash-completion
+app_completion = $(CURDIR)/completion/zswapd
 
 copyright = $(CURDIR)/COPYING
 readme = $(CURDIR)/README.md
@@ -73,13 +73,13 @@ install: build clean $(app) $(app_conf) $(app_service) $(app_completion) $(copyr
 	install -m 644 man/zswapd.1.gz $(man)/
 
 	install -m 755 $(app) $(app_bin)/zswapd
-	install -m 644 $(app_conf) $(etc_dir)/zswapd.conf
-	install -m 644 $(app_service) $(systemd_dir)/zswapd.service
+	install -m 644 $(app_conf) $(etc_dir)/
+	install -m 644 $(app_service) $(systemd_dir)/
 	install -m 644 $(copyright) $(docs)/copyright
 	install -m 644 $(readme) $(docs)/README.md
 	install -m 644 $(coc) $(docs)/CODE_OF_CONDUCT.md
 	install -m 644 $(version) $(docs)/version
-	install -m 644 $(app_completion) $(bash_completion)/zswapd
+	install -m 644 $(app_completion) $(bash_completion)/
 
 binary-indep: install
 	dh_installdocs
