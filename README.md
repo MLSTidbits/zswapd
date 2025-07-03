@@ -39,7 +39,7 @@ Then you can run the script directly:
 sudo ./configure --install
 ```
 
-<div align="left"><h3 style="font-size: 24px; font-weight: bold;"Manually Build and Install</h2></div>
+<div align="left"><h3 style="font-size: 24px; font-weight: bold;">Manually Build and Install</h2></div>
 
 To build the package manually, you need to install the required dependencies. This means that the [HowToNebie](https://repository.howtonebie.com/) repository is required. To find out what dependencies are required, you can run the following command: the output will show you the required dependencies.
 
