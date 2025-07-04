@@ -26,7 +26,7 @@ app_conf = $(CURDIR)/zswapd.conf
 app_service = $(CURDIR)/zswapd.service
 app_completion = $(CURDIR)/completion/zswapd
 
-modprobe = $(CURDIR)/load-zswapd.conf
+modprobe = $(CURDIR)/zswapd-load-zram.conf
 
 copyright = $(CURDIR)/COPYING
 readme = $(CURDIR)/README.md
@@ -66,7 +66,8 @@ install: build clean $(app) $(app_conf) $(app_service) $(app_completion) $(copyr
 	dh_prep
 	dh_installdirs
 
-	mkdir -m 755 -p $(etc_dir) $(docs) $(app_bin) $(bash_completion) $(man) $(systemd_dir)
+	mkdir -m 755 -p $(etc_dir) $(docs) $(app_bin) $(bash_completion) $(man) $(systemd_dir) \
+		$(modprobe_dir)
 
 	# Need to convert the Markdown manpage with pandoc.
 	@pandoc man/zswapd.1.md -s -t man -o man/zswapd.1
@@ -77,8 +78,7 @@ install: build clean $(app) $(app_conf) $(app_service) $(app_completion) $(copyr
 
 	install -m 755 $(app) $(app_bin)/zswapd
 	install -m 644 $(app_conf) $(etc_dir)/
-
-	install -m 644 $(modprobe) $(modprobe_dir)/load-zswapd.conf
+	install -m 644 $(modprobe) $(modprobe_dir)/
 
 	install -m 644 $(app_service) $(systemd_dir)/
 	install -m 644 $(copyright) $(docs)/copyright
