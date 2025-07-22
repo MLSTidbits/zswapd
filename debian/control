@@ -13,7 +13,8 @@ Vcs-Git: https://github.com/MichaelSchaecher/zswapd.git
 Package: zswapd
 Architecture: any
 Multi-Arch: foreign
-Depends: bash, coreutils, util-linux, bash-completion, systemd, nano
+Depends:
+ bash, coreutils, util-linux, bash-completion, systemd, nano
 Description: Setup zswapd  as your swap partition.
  zswapd is a daemon that manages the zswap compressed cache for swap pages.
  It allows you to configure the size of the cache, the compression algorithm,
