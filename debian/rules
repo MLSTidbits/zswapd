@@ -20,76 +20,31 @@
 #	dh_auto_configure -- \
 #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
 
-# what is being installed
-app = $(CURDIR)/zswapd
-app_conf = $(CURDIR)/zswapd.conf
-app_service = $(CURDIR)/zswapd.service
-app_completion = $(CURDIR)/completion/zswapd
-
-modprobe = $(CURDIR)/zswapd-load-zram.conf
-
-copyright = $(CURDIR)/COPYING
-readme = $(CURDIR)/README.md
-coc = $(CURDIR)/CODE_OF_CONDUCT.md
-
-version = $(CURDIR)/docs/version
-
-# The manpage is written in Markdown format and requires pandoc to convert it.
-app_man = $(CURDIR)/man/zswapd.1.md
-
-# The directories where the files will be installed.
-etc_dir = $(CURDIR)/debian/zswapd/etc
-modprobe_dir = $(CURDIR)/debian/zswapd/etc/modules-load.d
-docs = $(CURDIR)/debian/zswapd/usr/share/doc/zswapd
-app_bin = $(CURDIR)/debian/zswapd/usr/bin
-bash_completion = $(CURDIR)/debian/zswapd/usr/share/bash-completion/completions
-man = $(CURDIR)/debian/zswapd/usr/share/man/man1
-systemd_dir = $(CURDIR)/debian/zswapd/usr/lib/systemd/system
+%:
+	dh $@
 
 build: build-stamp
 
 build-stamp:
 	dh_auto_build
-	touch build-stamp
+	touch $@
 
 clean:
 	dh_auto_clean
 	rm -f build-stamp
 
-directories:
-
-install: build clean $(app) $(app_conf) $(app_service) $(app_completion) $(copyright) \
-	$(readme) $(coc) $(version) $(app_man) $(modprobe)
-
+install: build clean
 	dh_testdir
 	dh_testroot
 	dh_prep
-	dh_installdirs
-
-	mkdir -m 755 -p $(etc_dir) $(docs) $(app_bin) $(bash_completion) $(man) $(systemd_dir) \
-		$(modprobe_dir)
-
-	# Need to convert the Markdown manpage with pandoc.
-	@pandoc man/zswapd.1.md -s -t man -o man/zswapd.1
-
-	gzip -vf9 man/zswapd.1
-
-	install -m 644 man/zswapd.1.gz $(man)/
-
-	install -m 755 $(app) $(app_bin)/zswapd
-	install -m 644 $(app_conf) $(etc_dir)/
-	install -m 644 $(modprobe) $(modprobe_dir)/
-
-	install -m 644 $(app_service) $(systemd_dir)/
-	install -m 644 $(copyright) $(docs)/copyright
-	install -m 644 $(readme) $(docs)/README.md
-	install -m 644 $(coc) $(docs)/CODE_OF_CONDUCT.md
-	install -m 644 $(version) $(docs)/version
-	install -m 644 $(app_completion) $(bash_completion)/
 
 binary-indep: install
 	dh_installdocs
-	dh_installchangelogs $(changelog)
+	dh_bash-completion
+	dh_installchangelogs
+	dh_install
+	dh_installsystemd
+	dh_lintian
 	dh_installman
 	dh_installmime
 	dh_link
@@ -104,4 +59,5 @@ binary-indep: install
 binary-arch: build install
 
 binary: binary-indep binary-arch
+
 .PHONY: build clean install binary-indep binary-arch binary
