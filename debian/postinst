@@ -19,21 +19,25 @@ set -e
 
 case "${1}" in
     configure|upgrade|reinstall|install             )
-        # Restart the systemd-modules-load service to ensure the zram module is loaded
-        systemctl restart systemd-modules-load.service
+        # Load/Reload the kernel module
+        modprobe zswap || true
 
         # Check if zswapd is already enabled if so reload the daemon
         case "$(systemctl is-enabled zswapd.service)" in
-            enabled             ) systemctl daemon-reload ; systemctl restart zswapd.service ;;
-            disabled|inactive   ) systemctl enable --now zswapd.service                      ;;
+            enabled             )
+                systemctl daemon-reload ; systemctl restart zswapd.service
+            ;;
+            disabled|inactive   )
+                systemctl enable --now zswapd.service
+            ;;
             *                   )
-                echo "zswapd service is in an unknown state, please check manually." >&2
+                echo "Unknown status, please check manually." >&2
             ;;
         esac
 
     ;;
     *                                               )
-        echo "postinst called with unknown argument: ${1}" >&2
+        echo "postinst: called with unknown argument ${1}" >&2
     ;;
 esac
 
