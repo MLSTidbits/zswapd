@@ -18,6 +18,11 @@ case "$1" in
 			_dh_action=start
 		fi
 		deb-systemd-invoke $_dh_action 'zswapd.service' >/dev/null || true
+
+		# check if the ZRAM module is loaded
+		if ! lsmod | grep -q '^zram'; then
+			modprobe zram || echo "Failed to load zram module."
+		fi
 	;;
 	*)
 		echo "postinst: Invalid argument $1. Use 'configure|abort-upgrade|abort-deconfigure|abort-remove'."
