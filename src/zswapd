@@ -50,7 +50,7 @@ function event_log () {
 
     case "${_eventType}" in
         info|warning|error|critical )
-            logger -t "${_appName}" -p user.${_eventType} "${_eventMessage}"
+            logger -t "${_appName}" -p user."${_eventType}" "${_eventMessage}"
         ;;
         *                           )
             logger -t "${_appName}" -p user.unknown "${_eventMessage}"
@@ -101,7 +101,7 @@ function startSwap () {
             fi
         fi
 
-        event_log "info" "ZRAM device created: $device | Size: ${_swapSize}G | Algorithm: $_swapAlgorithm | Priority: ${priority}"
+        event_log "info"m "ZRAM device created and enabled: $device with priority ${priority}"
 
     done
 
@@ -128,7 +128,7 @@ function edit_conf () {
 
     # Open the configuration file in the default editor
     if test -n "${_editor}" ; then
-        "${_editor}" /etc/ddnsd.conf || {
+        "${_editor}" /etc/zswapd.conf || {
             echo "Failed to open configuration file in ${_editor}. Please check if the editor is installed."
             exit 1
         }
