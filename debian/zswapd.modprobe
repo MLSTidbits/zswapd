@@ -1,0 +1,2 @@
+# Start the zram module at boot
+zram

@@ -1,3 +1,2 @@
 src/zswapd usr/bin/
-src/module/zswapd.conf etc/modules-load.d/
 src/conf/zswapd.conf etc/

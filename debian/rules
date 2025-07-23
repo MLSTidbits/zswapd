@@ -43,6 +43,7 @@ binary-indep: install
 	dh_bash-completion
 	dh_installchangelogs
 	dh_install
+	dh_installmodules
 	dh_installsystemd
 	dh_lintian
 	dh_installman
