@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+	remove)
+		systemctl --system daemon-reload 2> /dev/null || true
+		if [ -x "/usr/bin/deb-systemd-helper" ]; then
+			deb-systemd-helper mask 'zswapd.service' >/dev/null || true
+		fi
+	;;
+	purge)
+		if [ -x "/usr/bin/deb-systemd-helper" ]; then
+			deb-systemd-helper purge 'zswapd.service' >/dev/null || true
+			deb-systemd-helper unmask 'zswapd.service' >/dev/null || true
+		fi
+	;;
+	*)
+		echo "postrm: Invalid argument '$1'. Use 'remove' or 'purge'."
+		exit 1
+	;;
+esac
