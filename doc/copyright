@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Source: <https://github.com/MichaelSchaecher/zswapd>
 Upstream-Name: zswapd
-Upstream-Contact: Michael Schaecher <michaelleeschaecher@gamil.com>
+Upstream-Contact: Michael Schaecher <michaelschaecher@howtonebie.com>
 
 Files:
  debian/*
@@ -11,7 +11,8 @@ Files:
  usr/share/man/man1/zswapd.1.gz
 
 Copyright:
- 2025 Michael Schaecher <michaelleeschaecher@gmail.com>
+ 2025 HowToNebie
+ 2025 Michael Schaecher <michaelschaecher@howtonebie.com>
 License: GPL-3.0+
 
 License: GPL-3.0+
