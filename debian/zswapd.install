@@ -1,2 +1,2 @@
 src/zswapd usr/bin/
-src/conf/zswapd.conf etc/
+src/zswapd.conf etc/
