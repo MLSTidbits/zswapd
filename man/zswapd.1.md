@@ -1,9 +1,9 @@
 ---
 title: zswapd
 section: 1
-header: Manual Page
+header: User Commands
 footer: SWAP to ZRAM Device
-author: Michael Lee Schaecher <michaelleeschaecher@gmail.com>
+author: Michael Lee Schaecher <michaelschaecher@mlstidbits.com>
 version: 1.0
 date: 2025-05-26
 ---
@@ -97,4 +97,5 @@ Set the number of ZRAM devices to create. This allows you to create multiple ZRA
 
 This manual page is part of the zswapd project, which is released under the GPU Public License (GPL) version 3 or later. For more information about the license go to <https://www.gnu.org/licenses/gpl-3.0.html>.
 
-Copyright (C) 2025 Michael Lee Schaecher <michaelleeschaecher@gmail.com>
+Copyright (C) 2025 MLSTidbits <contact@mlstidbits.com>
+Copyright (C) 2025 Michael Schaecher <michaelschaecher@mlstidbits.com>
