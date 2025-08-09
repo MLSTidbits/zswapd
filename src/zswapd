@@ -9,7 +9,7 @@ function root_check () {
 
 }
 
-# shellcheck disable=SC2317
+# shellcheck disable=SC2329
 function sign_handler () {
 
     local _signal; _signal="${1:-SIGINT}"
