@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-# Copyright (C) 2024 Michael Schaecher <michaelleeschaecher@gmail.com>
+# zswapd - A script to manage zram swap devices on Linux systems
 
 # Test if we are root
 function root_check () {
