@@ -4,7 +4,8 @@ Priority: optional
 Maintainer: MLS Tidbits <contact@mlstidbits.com>
 Rules-Requires-Root: no
 Build-Depends:
- dh-gitchangelog, git, debhelper-compat (= 13), dh-make, lintian (>= 2.5.0), pandoc
+ dh-gitchangelog, git, debhelper-compat (= 13), dh-make,
+ lintian (>= 2.5.0), pandoc, boa
 Standards-Version: 4.6.2
 Homepage: https://mlstidbits.com
 Vcs-Browser: https://github.com/MLSTidbits/zswapd
