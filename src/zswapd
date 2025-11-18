@@ -5,7 +5,10 @@
 # Test if we are root
 function root_check () {
 
-    (( "$(id -u)" == 0 )) || { echo "This script must be run as root" ; exit 1 ; }
+    if (( "$(id -u)" == 0 )) ; then
+        echo "This script must be run as root"
+        event_log "critical" "Script not run as root. Exiting."
+    fi
 
 }
 
@@ -37,6 +40,7 @@ function event_log () {
     case "${_eventType}" in
         info|warning|error|critical )
             logger -t "${_appName}" -p user."${_eventType}" "${_eventMessage}"
+            [[ "${_eventType}" == "error" || "${_eventType}" == "critical" ]] && exit
         ;;
         *                           )
             logger -t "${_appName}" -p user.unknown "${_eventMessage}"
