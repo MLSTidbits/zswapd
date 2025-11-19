@@ -83,15 +83,17 @@ function start-swap () {
 
 }
 
-function stopSwap () {
+function stop-swap () {
 
     root-check
 
     zramctl -n | awk '{print $1}' | while read -r device; do
-        swapoff "$device" || { event-log "error" "Failed to disable swap on device: $device"; exit 1; }
-        zramctl --reset "$device" || { event-log "error" "Failed to reset zram device: $device"; exit 1; }
+
+        swapoff "$device" || event-log "error" "Failed to disable swap on device: $device"
+        zramctl --reset "$device" || event-log "error" "Failed to reset zram device: $device"
 
         event-log "info" "ZRAM device reset: $device"
+
     done
 
 }
@@ -199,7 +201,7 @@ EOF
 
 case "${1}" in
     start                   ) start-swap                       ;;
-    stop                    ) stopSwap                        ;;
+    stop                    ) stop-swap                        ;;
     status                  ) echo "${_zramInfo}"    ; exit 0 ;;
     config                  ) edit_conf                       ;;
     version                 ) echo "${_versionInfo}" ; exit 0 ;;
