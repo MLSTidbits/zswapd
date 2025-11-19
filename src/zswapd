@@ -7,44 +7,37 @@ function root-check () {
 
     if (( "$(id -u)" == 0 )) ; then
         echo "This script must be run as root"
-        event_log "critical" "Script not run as root. Exiting."
+        event-log "critical" "Script not run as root. Exiting."
     fi
 
 }
 
 # shellcheck disable=SC2329
-function sign_handler () {
+function sign-handler () {
 
     local _signal; _signal="${1:-SIGINT}"
 
     case "${_signal}" in
-        SIGINT|SIGTERM|SIGQUIT  )
-            event_log "info" "Received signal: ${_signal}. Stopping ${_appName} service ... "
-        ;;
-        *                       )
-            event_log "warning" "Received unknown signal: ${_signal}"
-        ;;
+        SIGINT|SIGTERM|SIGQUIT )
+            event-log "info" "Received signal: ${_signal}. Stopping ${_appName} service ... " ;;
+        *                      ) event-log "warning" "Received unknown signal: ${_signal}"    ;;
     esac
 
     exit 0
 
 }
 
-function event_log () {
+function event-log () {
 
-    local _eventType _eventMessage
+    local eventType="${1:-unknown}"
+    local eventMessage="${2:-No message provided}"
 
-    _eventType="${1:-unknown}"
-    _eventMessage="${2:-No message provided}"
-
-    case "${_eventType}" in
+    case "$eventType" in
         info|warning|error|critical )
-            logger -t "${_appName}" -p user."${_eventType}" "${_eventMessage}"
-            [[ "${_eventType}" == "error" || "${_eventType}" == "critical" ]] && exit
+            logger -t "${_appName}" -p user."$eventType" "$eventMessage"
+            [[ "$eventType" == "error" || "$eventType" == "critical" ]] && exit
         ;;
-        *                           )
-            logger -t "${_appName}" -p user.unknown "${_eventMessage}"
-        ;;
+        *                           ) logger -t "${_appName}" -p user.unknown "${eventMessage}" ;;
     esac
 
 }
@@ -56,23 +49,23 @@ function startSwap () {
     local priority device
 
     # Does a zram device already exist?
-    ! zramctl -n | grep -q '/dev/zram' || { event_log "info" "ZRAM device already exists." ; exit 0 ;}
+    ! zramctl -n | grep -q '/dev/zram' || { event-log "info" "ZRAM device already exists." ; exit 0 ;}
 
     # Validate the compression algorithm is supported.
     case "${_swapAlgorithm}" in
         lzo|zstd|lz4    ) ;;
         *               )
-            event_log "error" "Unsupported compression algorithm: ${_swapAlgorithm}"
+            event-log "error" "Unsupported compression algorithm: ${_swapAlgorithm}"
             exit 1
         ;;
     esac
 
     # Make sure that the required amount of RAM is available (32Gb minimum and 50% free)
     (( _totalRAM > 33554432 )) || {
-        event_log "error" "Insufficient RAM: ${_totalRAM} bytes available, 32GB required."; exit 1; }
+        event-log "error" "Insufficient RAM: ${_totalRAM} bytes available, 32GB required."; exit 1; }
 
     (( _availableRAM > 50 )) || {
-        event_log "error" "Insufficient RAM: ${_availableRAM}% available, 50% required." ; exit 1; }
+        event-log "error" "Insufficient RAM: ${_availableRAM}% available, 50% required." ; exit 1; }
 
     # If more then 1 zram device then override swap priority
     test "${_swapDevices}" -lt "1" || priority=$(( _swapPriority / _swapDevices ))
@@ -80,18 +73,18 @@ function startSwap () {
     # Create the zram devices
     for ((i = 0; i < _swapDevices; i++)); do
         device=$(zramctl --size "${_swapSize}G" --algorithm "$_swapAlgorithm" --find) || {
-            event_log "error" "Failed to create zram device." ; exit 1 ; }
+            event-log "error" "Failed to create zram device." ; exit 1 ; }
 
-        mkswap -L SWAP "$device" || { event_log "error" "Failed to mkswap on device: $device"; exit 1; }
+        mkswap -L SWAP "$device" || { event-log "error" "Failed to mkswap on device: $device"; exit 1; }
 
         if ! swapon --priority "${priority}" "$device" 2>/dev/null; then
             if ! swapon "$device"; then
-                event_log "error" "Failed to enable swap on device: $device"
+                event-log "error" "Failed to enable swap on device: $device"
                 exit 1;
             fi
         fi
 
-        event_log "info"m "ZRAM device created and enabled: $device with priority ${priority}"
+        event-log "info"m "ZRAM device created and enabled: $device with priority ${priority}"
 
     done
 
@@ -102,10 +95,10 @@ function stopSwap () {
     root-check
 
     zramctl -n | awk '{print $1}' | while read -r device; do
-        swapoff "$device" || { event_log "error" "Failed to disable swap on device: $device"; exit 1; }
-        zramctl --reset "$device" || { event_log "error" "Failed to reset zram device: $device"; exit 1; }
+        swapoff "$device" || { event-log "error" "Failed to disable swap on device: $device"; exit 1; }
+        zramctl --reset "$device" || { event-log "error" "Failed to reset zram device: $device"; exit 1; }
 
-        event_log "info" "ZRAM device reset: $device"
+        event-log "info" "ZRAM device reset: $device"
     done
 
 }
@@ -156,7 +149,7 @@ _getSwap="$(free -h | grep -i 'swap')"
 _editor="${EDITOR:-"nano"}"
 
 # Trap errors and log them
-trap sign_handler SIGINT SIGTERM SIGQUIT
+trap sign-handler SIGINT SIGTERM SIGQUIT
 
 _copyRightInfo="$(cat <<EOF
 Copyright (C) 2024 Michael Schaecher  <michaelleeschaecher@gmail.com> GNU v3 License
