@@ -42,49 +42,42 @@ function event-log () {
 
 }
 
-function startSwap () {
+function start-swap () {
 
     root-check
 
-    local priority device
+    local setPriority
+    local zramDevice
 
     # Does a zram device already exist?
     ! zramctl -n | grep -q '/dev/zram' || { event-log "info" "ZRAM device already exists." ; exit 0 ;}
 
     # Validate the compression algorithm is supported.
-    case "${_swapAlgorithm}" in
-        lzo|zstd|lz4    ) ;;
-        *               )
-            event-log "error" "Unsupported compression algorithm: ${_swapAlgorithm}"
-            exit 1
-        ;;
-    esac
+
+    checkAlgorithm=("lzo" "zstd" "lz4")
+
+    [[ " ${checkAlgorithm[*]} " == *" $swapAlgorithm "* ]] ||
+    event-log "error" "Unsupported compression algorithm: $swapAlgorithm"
 
     # Make sure that the required amount of RAM is available (32Gb minimum and 50% free)
-    (( _totalRAM > 33554432 )) || {
-        event-log "error" "Insufficient RAM: ${_totalRAM} bytes available, 32GB required."; exit 1; }
+    (( totalRAM > 33554432 )) || event-log "error" "Insufficient RAM: $totalRAM bytes available, 32GB required."
 
-    (( _availableRAM > 50 )) || {
-        event-log "error" "Insufficient RAM: ${_availableRAM}% available, 50% required." ; exit 1; }
+    (( availableRAM > 50 )) || event-log "error" "Insufficient RAM: $availableRAM% available, 50% required."
 
     # If more then 1 zram device then override swap priority
-    test "${_swapDevices}" -lt "1" || priority=$(( _swapPriority / _swapDevices ))
+    test "${swapDevices}" -lt "1" || setPriority=$(( swapPriority / swapDevices ))
 
     # Create the zram devices
-    for ((i = 0; i < _swapDevices; i++)); do
-        device=$(zramctl --size "${_swapSize}G" --algorithm "$_swapAlgorithm" --find) || {
-            event-log "error" "Failed to create zram device." ; exit 1 ; }
+    for ((i = 0; i < swapDevices; i++)); do
+        zramDevice=$(zramctl --size "${swapSize}G" --algorithm "$swapAlgorithm" --find) ||
+        event-log "error" "Failed to create zram device."
 
-        mkswap -L SWAP "$device" || { event-log "error" "Failed to mkswap on device: $device"; exit 1; }
+        mkswap -L SWAP "$zramDevice" || event-log "error" "Failed to mkswap on device: $zramDevice"
 
-        if ! swapon --priority "${priority}" "$device" 2>/dev/null; then
-            if ! swapon "$device"; then
-                event-log "error" "Failed to enable swap on device: $device"
-                exit 1;
-            fi
-        fi
+        ! swapon "$zramDevice" && ! swapon --priority "$setPriority" "$zramDevice" 2>/dev/null &&
+        event-log "error" "Failed to enable swap on device: $zramDevice"
 
-        event-log "info"m "ZRAM device created and enabled: $device with priority ${priority}"
+        event-log "info"m "ZRAM device created and enabled: $zramDevice with priority $setPriority"
 
     done
 
@@ -131,17 +124,17 @@ source /etc/zswapd.conf 2>/dev/null || { echo "Missing configuration file: /etc/
 _appName="zswapd"
 _appVersion="$(cat /usr/share/doc/${_appName}/version 2>/dev/null || echo "unknown")"
 
-_totalRAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
+totalRAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
 _usedRAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
 
 # Do some math to calculate if more then 50% of the RAM is used
-_availableRAM="$(( 100 - (( _usedRAM * 100 ) / _totalRAM) ))"
+availableRAM="$(( 100 - (( _usedRAM * 100 ) / totalRAM) ))"
 
 # Default values for the script
-_swapSize=${SWAP_SIZE:-"2"}
-_swapAlgorithm=${SWAP_ALGORITHM:-"lzo"}
-_swapDevices="${SWAP_DEVICES:-"1"}"
-_swapPriority=${SWAP_PRIORITY:-"100"}
+swapSize=${SWAP_SIZE:-"2"}
+swapAlgorithm=${SWAP_ALGORITHM:-"lzo"}
+swapDevices="${SWAP_DEVICES:-"1"}"
+swapPriority=${SWAP_PRIORITY:-"100"}
 
 _getRAM="$(free -h | grep -i 'mem')"
 _getSwap="$(free -h | grep -i 'swap')"
@@ -188,9 +181,9 @@ ITEM                        VALUE
 
 Total RAM:                  $(echo "${_getRAM}" | awk '{print $2}')
 Used RAM:                   $(echo "${_getRAM}" | awk '{print $3}')
-Available RAM:              ${_availableRAM}%
+Available RAM:              ${availableRAM}%
 
-Devices Number:             ${_swapDevices}
+Devices Number:             ${swapDevices}
 ZRAM Devices:               $(zramctl -n | awk '{print $1}')
 
 Swap Size:                  $(echo "${_getSwap}" | awk '{print $2}')
@@ -199,13 +192,13 @@ Swap Usage:                 $(echo "${_getSwap}" | awk '{print $3}')
 Service:                    $(systemctl is-active --quiet "${_appName}.service" &&
                                 echo "active" || echo "inactive")
 
-Compression Algorithm:      ${_swapAlgorithm}
+Compression Algorithm:      ${swapAlgorithm}
 
 EOF
 )"
 
 case "${1}" in
-    start                   ) startSwap                       ;;
+    start                   ) start-swap                       ;;
     stop                    ) stopSwap                        ;;
     status                  ) echo "${_zramInfo}"    ; exit 0 ;;
     config                  ) edit_conf                       ;;
