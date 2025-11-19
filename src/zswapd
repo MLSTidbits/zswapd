@@ -3,7 +3,7 @@
 # zswapd - A script to manage zram swap devices on Linux systems
 
 # Test if we are root
-function root_check () {
+function root-check () {
 
     if (( "$(id -u)" == 0 )) ; then
         echo "This script must be run as root"
@@ -51,7 +51,7 @@ function event_log () {
 
 function startSwap () {
 
-    root_check
+    root-check
 
     local priority device
 
@@ -99,7 +99,7 @@ function startSwap () {
 
 function stopSwap () {
 
-    root_check
+    root-check
 
     zramctl -n | awk '{print $1}' | while read -r device; do
         swapoff "$device" || { event_log "error" "Failed to disable swap on device: $device"; exit 1; }
@@ -114,7 +114,7 @@ function edit_conf () {
 
     echo "Opening configuration file for editing..."
 
-    root_check
+    root-check
 
     # Open the configuration file in the default editor
     if test -n "${_editor}" ; then
