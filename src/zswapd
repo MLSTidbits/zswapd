@@ -8,8 +8,10 @@ function sign-handler () {
 
     case "${_signal}" in
         SIGINT|SIGTERM|SIGQUIT )
-            event-log "info" "Received signal: ${_signal}. Stopping ${appName} service ... " ;;
-        *                      ) event-log "warning" "Received unknown signal: ${_signal}"    ;;
+            event-log "info" "Received signal: ${_signal}. Stopping service..."
+            stop-swap ; exit 0
+        ;;
+        *                      ) event-log "warning" "Received unknown signal: ${_signal}" ;;
     esac
 
     exit 0
