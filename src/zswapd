@@ -8,7 +8,7 @@ function sign-handler () {
 
     case "${_signal}" in
         SIGINT|SIGTERM|SIGQUIT )
-            event-log "info" "Received signal: ${_signal}. Stopping ${_appName} service ... " ;;
+            event-log "info" "Received signal: ${_signal}. Stopping ${appName} service ... " ;;
         *                      ) event-log "warning" "Received unknown signal: ${_signal}"    ;;
     esac
 
@@ -23,10 +23,10 @@ function event-log () {
 
     case "$eventType" in
         info|warning|error|critical )
-            logger -t "${_appName}" -p user."$eventType" "$eventMessage"
+            logger -t "${appName}" -p user."$eventType" "$eventMessage"
             [[ "$eventType" == "error" || "$eventType" == "critical" ]] && exit
         ;;
-        *                           ) logger -t "${_appName}" -p user.unknown "${eventMessage}" ;;
+        *                           ) logger -t "${appName}" -p user.unknown "${eventMessage}" ;;
     esac
 
 }
@@ -103,14 +103,14 @@ function edit-conf () {
 # shellcheck disable=SC1091
 source /etc/zswapd.conf 2>/dev/null || { echo "Missing configuration file: /etc/zswapd.conf" ; exit 1 ; }
 
-_appName="zswapd"
-_appVersion="$(cat /usr/share/doc/${_appName}/version 2>/dev/null || echo "unknown")"
+appName="zswapd"
+appVersion="$(cat /usr/share/doc/${appName}/version 2>/dev/null || echo "unknown")"
 
 totalRAM="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
-_usedRAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
+usedRAM="$(awk '/Active:/ {print $2}' /proc/meminfo)"
 
 # Do some math to calculate if more then 50% of the RAM is used
-availableRAM="$(( 100 - (( _usedRAM * 100 ) / totalRAM) ))"
+availableRAM="$(( 100 - (( usedRAM * 100 ) / totalRAM) ))"
 
 # Default values for the script
 swapSize=${SWAP_SIZE:-"2"}
@@ -118,22 +118,22 @@ swapAlgorithm=${SWAP_ALGORITHM:-"lzo"}
 swapDevices="${SWAP_DEVICES:-"1"}"
 swapPriority=${SWAP_PRIORITY:-"100"}
 
-_getRAM="$(free -h | grep -i 'mem')"
-_getSwap="$(free -h | grep -i 'swap')"
+getRAM="$(free -h | grep -i 'mem')"
+getSwap="$(free -h | grep -i 'swap')"
 
 defaultEditor="${EDITOR:-"nano"}"
 
 # Trap errors and log them
 trap sign-handler SIGINT SIGTERM SIGQUIT
 
-_copyRightInfo="$(cat <<EOF
+copyRightInfo="$(cat <<EOF
 Copyright (C) 2024 Michael Schaecher  <michaelleeschaecher@gmail.com> GNU v3 License
 EOF
 )"
 
 versionInfo="$(cat <<EOF
-${_appName} - version: ${_appVersion}
-${_copyRightInfo}
+${appName} - version: ${appVersion}
+${copyRightInfo}
 EOF
 )"
 
@@ -141,7 +141,7 @@ helpInfo="$(cat <<EOF
 ${versionInfo}
 This script creates and enables a zram swap device with the following parameters:
 
-Usage: ${_appName} [OPTIONS]
+Usage: ${appName} [OPTIONS]
 
 Options:
     start                   Start the zram swap device with the configured parameters
@@ -151,7 +151,7 @@ Options:
     version                 Show the version information
     help                    Show this help message
 
-${_copyRightInfo}
+${copyRightInfo}
 EOF
 )"
 
@@ -161,17 +161,17 @@ ${versionInfo}
 ITEM                        VALUE
 -----------------------------------------------------------
 
-Total RAM:                  $(echo "${_getRAM}" | awk '{print $2}')
-Used RAM:                   $(echo "${_getRAM}" | awk '{print $3}')
+Total RAM:                  $(echo "${getRAM}" | awk '{print $2}')
+Used RAM:                   $(echo "${getRAM}" | awk '{print $3}')
 Available RAM:              ${availableRAM}%
 
 Devices Number:             ${swapDevices}
 ZRAM Devices:               $(zramctl -n | awk '{print $1}')
 
-Swap Size:                  $(echo "${_getSwap}" | awk '{print $2}')
-Swap Usage:                 $(echo "${_getSwap}" | awk '{print $3}')
+Swap Size:                  $(echo "${getSwap}" | awk '{print $2}')
+Swap Usage:                 $(echo "${getSwap}" | awk '{print $3}')
 
-Service:                    $(systemctl is-active --quiet "${_appName}.service" &&
+Service:                    $(systemctl is-active --quiet "${appName}.service" &&
                                 echo "active" || echo "inactive")
 
 Compression Algorithm:      ${swapAlgorithm}
@@ -183,7 +183,7 @@ EOF
 [[ $# -eq 0 && "$1" == "version" ]] && { echo "${versionInfo}" ; exit 0 ; }
 
 # No options provided
-[[ $# -eq 0 ]] && { echo "No options provided. Use '${_appName} help' for usage information." ; exit 1 ; }
+[[ $# -eq 0 ]] && { echo "No options provided. Use '${appName} help' for usage information." ; exit 1 ; }
 
 # Ensure the script is run as root.
 if (( "$(id -u)" == "0" )) ; then
