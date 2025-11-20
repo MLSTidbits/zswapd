@@ -1,17 +1,6 @@
 #!/bin/env bash
 
 # zswapd - A script to manage zram swap devices on Linux systems
-
-# Test if we are root
-function root-check () {
-
-    if (( "$(id -u)" == 0 )) ; then
-        echo "This script must be run as root"
-        event-log "critical" "Script not run as root. Exiting."
-    fi
-
-}
-
 # shellcheck disable=SC2329
 function sign-handler () {
 
@@ -43,8 +32,6 @@ function event-log () {
 }
 
 function start-swap () {
-
-    root-check
 
     local setPriority
     local zramDevice
@@ -85,8 +72,6 @@ function start-swap () {
 
 function stop-swap () {
 
-    root-check
-
     zramctl -n | awk '{print $1}' | while read -r device; do
 
         swapoff "$device" || event-log "error" "Failed to disable swap on device: $device"
@@ -101,8 +86,6 @@ function stop-swap () {
 function edit-conf () {
 
     echo "Opening configuration file for editing..."
-
-    root-check
 
     # Open the configuration file in the default editor
     if test -n "$defaultEditor" ; then
@@ -148,14 +131,14 @@ Copyright (C) 2024 Michael Schaecher  <michaelleeschaecher@gmail.com> GNU v3 Lic
 EOF
 )"
 
-_versionInfo="$(cat <<EOF
+versionInfo="$(cat <<EOF
 ${_appName} - version: ${_appVersion}
 ${_copyRightInfo}
 EOF
 )"
 
-_helpInfo="$(cat <<EOF
-${_versionInfo}
+helpInfo="$(cat <<EOF
+${versionInfo}
 This script creates and enables a zram swap device with the following parameters:
 
 Usage: ${_appName} [OPTIONS]
@@ -173,7 +156,7 @@ EOF
 )"
 
 _zramInfo="$(cat <<EOF
-${_versionInfo}
+${versionInfo}
 
 ITEM                        VALUE
 -----------------------------------------------------------
@@ -196,18 +179,22 @@ Compression Algorithm:      ${swapAlgorithm}
 EOF
 )"
 
-case "${1}" in
-    start                   ) start-swap                      ;;
-    stop                    ) stop-swap                       ;;
-    status                  ) echo "${_zramInfo}"    ; exit 0 ;;
-    config                  ) edit-conf                       ;;
-    version                 ) echo "${_versionInfo}" ; exit 0 ;;
-    help                    ) echo "${_helpInfo}"    ; exit 0 ;;
-    *                       )
-        echo "Invalid option: ${1}"
-        echo "Use '${_appName} help' for usage information"
-        exit 1
-    ;;
-esac
+[[ $# -eq 0 && "$1" == "help" ]] && { echo "${helpInfo}" ; exit 0 ; }
+[[ $# -eq 0 && "$1" == "version" ]] && { echo "${versionInfo}" ; exit 0 ; }
+
+# No options provided
+[[ $# -eq 0 ]] && { echo "No options provided. Use '${_appName} help' for usage information." ; exit 1 ; }
+
+# Ensure the script is run as root.
+if (( "$(id -u)" == "0" )) ; then
+    case "${1}" in
+        start                   ) start-swap                      ;;
+        stop                    ) stop-swap                       ;;
+        status                  ) echo "${_zramInfo}"    ; exit 0 ;;
+        config                  ) edit-conf                       ;;
+    esac
+else
+    event-log "error" "This script must be run as root."
+fi
 
 exit 0
