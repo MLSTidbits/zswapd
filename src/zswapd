@@ -98,27 +98,24 @@ function stop-swap () {
 
 }
 
-function edit_conf () {
+function edit-conf () {
 
     echo "Opening configuration file for editing..."
 
     root-check
 
     # Open the configuration file in the default editor
-    if test -n "${_editor}" ; then
-        "${_editor}" /etc/zswapd.conf || {
-            echo "Failed to open configuration file in ${_editor}. Please check if the editor is installed."
-            exit 1
-        }
+    if test -n "$defaultEditor" ; then
+        "$defaultEditor" /etc/zswapd.conf ||
+        event-log "error" "Failed to open configuration file with editor: $defaultEditor"
     else
-        echo "No editor set. Please set the EDITOR environment variable to your preferred text editor."
-        exit 1
+        event-log "error" "No default editor set. Please set the EDITOR environment variable."
     fi
 
 }
 
-
-set -euo pipefail
+# Uncomment for debugging
+#set -euo pipefail
 
 # shellcheck disable=SC1091
 source /etc/zswapd.conf 2>/dev/null || { echo "Missing configuration file: /etc/zswapd.conf" ; exit 1 ; }
@@ -141,7 +138,7 @@ swapPriority=${SWAP_PRIORITY:-"100"}
 _getRAM="$(free -h | grep -i 'mem')"
 _getSwap="$(free -h | grep -i 'swap')"
 
-_editor="${EDITOR:-"nano"}"
+defaultEditor="${EDITOR:-"nano"}"
 
 # Trap errors and log them
 trap sign-handler SIGINT SIGTERM SIGQUIT
@@ -200,10 +197,10 @@ EOF
 )"
 
 case "${1}" in
-    start                   ) start-swap                       ;;
-    stop                    ) stop-swap                        ;;
+    start                   ) start-swap                      ;;
+    stop                    ) stop-swap                       ;;
     status                  ) echo "${_zramInfo}"    ; exit 0 ;;
-    config                  ) edit_conf                       ;;
+    config                  ) edit-conf                       ;;
     version                 ) echo "${_versionInfo}" ; exit 0 ;;
     help                    ) echo "${_helpInfo}"    ; exit 0 ;;
     *                       )
